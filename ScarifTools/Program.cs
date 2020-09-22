@@ -16,7 +16,7 @@ namespace ScarifTools
 			var registry = FabricRegistry.Load(registryPath);
 			var world = World.Load(levelPath);
 
-			var region = new ScarifStructure(world.GetRegion(new Coord2(-2, -2)).Chunks);
+			var region = new ScarifStructure(world.GetRegion(new Coord2(-1, -1)).Chunks);
 			region.Save("out.scrf2");
 		}
 	}
@@ -40,6 +40,7 @@ namespace ScarifTools
 			var chunkOffsets = new Dictionary<Coord2, long>();
 			var headerOffset = fs.BaseStream.Position;
 
+			fs.Write(Chunks.Count);
 			foreach (var (coord, chunk) in Chunks)
 			{
 				fs.Write(coord.X);
