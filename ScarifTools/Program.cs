@@ -36,11 +36,11 @@ namespace ScarifTools
 
 			fs.Write(0x46524353); // "SCRF"
 			fs.Write(2); // Version 2
+			fs.Write(Chunks.Count);
 
 			var chunkOffsets = new Dictionary<Coord2, long>();
 			var headerOffset = fs.BaseStream.Position;
 
-			fs.Write(Chunks.Count);
 			foreach (var (coord, chunk) in Chunks)
 			{
 				fs.Write(coord.X);
