@@ -19,7 +19,9 @@ namespace ScarifTools
 			ms.SetLength(0);
 			new NbtTree(tag).WriteTo(ms);
 
-			bw.Write(ms.Length);
+			bw.Write((int)ms.Length);
+
+			ms.Seek(0, SeekOrigin.Begin);
 			ms.CopyTo(bw.BaseStream);
 		}
 

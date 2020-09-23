@@ -1,11 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ScarifTools
 {
 	class Program
 	{
+		public static int Blocks = 0;
+
 		static void Main(string[] args)
 		{
 			var worldPath = @"E:\Forge\Mods\PSWG\PSWG15\run\saves\Development";
@@ -16,8 +21,16 @@ namespace ScarifTools
 			var registry = FabricRegistry.Load(registryPath);
 			var world = World.Load(levelPath);
 
-			var region = new ScarifStructure(world.GetRegion(new Coord2(-1, -1)).Chunks);
+			var chunks = new Dictionary<Coord2, Chunk>();
+			AddRange(chunks, world.GetRegion(new Coord2(-1, -1)).Chunks);
+
+			var region = new ScarifStructure(chunks);
 			region.Save("out.scrf2");
+		}
+
+		private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)
+		{
+			foreach (var (key, value) in src) dest[key] = value;
 		}
 	}
 
@@ -41,47 +54,48 @@ namespace ScarifTools
 			var chunkOffsets = new Dictionary<Coord2, long>();
 			var headerOffset = fs.BaseStream.Position;
 
-			foreach (var (coord, chunk) in Chunks)
-			{
-				fs.Write(coord.X);
-				fs.Write(coord.Z);
-				fs.Write(0L);
-			}
-
+			const int headerEntrySize = sizeof(int) * 2 + sizeof(long);
+			fs.BaseStream.Seek(headerEntrySize * Chunks.Count, SeekOrigin.Current);
+			
+			using var ms = new MemoryStream();
+			
 			foreach (var (coord, chunk) in Chunks)
 			{
 				chunkOffsets.Add(coord, fs.BaseStream.Position);
 
-				var zs = new BinaryWriter(new GZipStream(fs.BaseStream, CompressionLevel.Optimal));
-				zs.Write(chunk.Tiles.Count);
+				var zs = fs; //new BinaryWriter(new GZipStream(fs.BaseStream, CompressionLevel.Optimal));
 
-				using var ms = new MemoryStream();
+				zs.Write7BitEncodedInt(chunk.Tiles.Count);
 				foreach (var (pos, tag) in chunk.Tiles)
 				{
-					zs.Write(pos.X);
-					zs.Write(pos.Y);
-					zs.Write(pos.Z);
+					zs.Write7BitEncodedInt(pos.X);
+					zs.Write7BitEncodedInt(pos.Y);
+					zs.Write7BitEncodedInt(pos.Z);
 
 					zs.WriteNbt(tag, ms);
 				}
 
-				zs.Write(chunk.Sections.Length);
+				zs.Write7BitEncodedInt(chunk.Sections.Length);
 				foreach (var section in chunk.Sections)
 				{
 					zs.Write(section.Y);
 
-					zs.Write(section.Palette.Length);
+					zs.Write7BitEncodedInt(section.Palette.Length);
 					foreach (var paletteEntry in section.Palette)
 					{
 						zs.WriteNullTermString(paletteEntry.Name);
-						zs.Write((byte)(paletteEntry.Properties != null ? 1 : 0));
+						var hasProperties = paletteEntry.Properties != null;
 
-						if (paletteEntry.Properties != null)
+						zs.Write((byte)(hasProperties ? 1 : 0));
+
+						if (hasProperties)
 							zs.WriteNbt(paletteEntry.Properties, ms);
 					}
 
-					zs.Write(section.BlockStates.Length);
+					// Section length always 4096 (16^3)
 					foreach (var state in section.BlockStates) zs.Write7BitEncodedInt(state);
+
+					Program.Blocks += section.BlockStates.Length;
 				}
 			}
 
