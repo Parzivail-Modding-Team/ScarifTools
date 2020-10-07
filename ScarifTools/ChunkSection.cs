@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using Substrate.Nbt;
 
 namespace ScarifTools
@@ -13,7 +15,7 @@ namespace ScarifTools
 		public readonly long[] PackedBlockStates;
 		public readonly BlockState[] Palette;
 
-		public ChunkSection(Coord2 pos, byte y, long[] packedStates, BlockState[] palette)
+		public ChunkSection(int dataVersion, Coord2 pos, byte y, long[] packedStates, BlockState[] palette)
 		{
 			Pos = pos;
 			Y = y;
@@ -31,25 +33,45 @@ namespace ScarifTools
 			paletteLength++;
 
 			var bitWidth = Math.Max((int)Math.Log2(paletteLength), 4);
-			var blocksPerLong = sizeof(long) * 8 / bitWidth;
 
 			BlockStates = new int[4096];
-			var bArr = new BitArray(packedStates.SelectMany(BitConverter.GetBytes).ToArray());
 			
-			var tightlyPackedLength = (4096 * bitWidth / 8 * 8) / 64;
-			var isTightlyPacked = packedStates.Length == tightlyPackedLength;
+			var isTightlyPacked = dataVersion < 2529; // 20w17a (2529) changed the data packing
 
-			var bitIdx = 0;
-			for (var i = 0; i < BlockStates.Length; i++)
+			if (isTightlyPacked)
 			{
-				BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
+				var bArr = new BitArray(packedStates.SelectMany(BitConverter.GetBytes).ToArray());
 
-				bitIdx += bitWidth;
+				var bitIdx = 0;
+				for (var i = 0; i < BlockStates.Length; i++)
+				{
+					BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
+					bitIdx += bitWidth;
+				}
+			}
+			else
+			{
+				// In 20w17a+ the remaining bits in a long are left unused instead of
+				// the data being split and rolling over into the next long
 
-				// In 1.16+, the bits are not tightly packed, i.e. they
-				// do not cross long boundaries
-				if (!isTightlyPacked && i % blocksPerLong == 0)
-					bitIdx += 64 - bitWidth * blocksPerLong;
+				var blocksPerLong = sizeof(long) * 8 / bitWidth;
+
+				var longIdx = 0;
+				var bitIdx = 0;
+				BitArray bArr = null;
+
+				for (var i = 0; i < BlockStates.Length; i++)
+				{
+					if (i % blocksPerLong == 0)
+					{
+						bArr = new BitArray(BitConverter.GetBytes(packedStates[longIdx]));
+						longIdx++;
+						bitIdx = 0;
+					}
+
+					BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
+					bitIdx += bitWidth;
+				}
 			}
 		}
 
@@ -68,7 +90,7 @@ namespace ScarifTools
 			return Palette[BlockStates[block.Y * 256 + block.Z * 16 + block.X]];
 		}
 
-		public static ChunkSection Load(Coord2 pos, TagNodeCompound tag)
+		public static ChunkSection Load(int dataVersion, Coord2 pos, TagNodeCompound tag)
 		{
 			var y = tag["Y"].ToTagByte().Data;
 
@@ -79,7 +101,7 @@ namespace ScarifTools
 
 			var blockStates = tag["BlockStates"].ToTagLongArray().Data;
 
-			return new ChunkSection(pos, y, blockStates, palette);
+			return new ChunkSection(dataVersion, pos, y, blockStates, palette);
 		}
 
 		protected bool Equals(ChunkSection other)

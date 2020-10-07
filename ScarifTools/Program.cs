@@ -18,14 +18,21 @@ namespace ScarifTools
 			var levelPath = Path.Combine(worldPath, "level.dat");
 			var registryPath = Path.Combine(worldPath, "data", "fabricRegistry.dat");
 
-			var registry = FabricRegistry.Load(registryPath);
+			// var registry = FabricRegistry.Load(registryPath);
 			var world = World.Load(levelPath);
 
 			var chunks = new Dictionary<Coord2, Chunk>();
-			AddRange(chunks, world.GetRegion(new Coord2(-1, -1)).Chunks);
+
+			foreach (var regionId in world.GetRegions())
+			{
+				AddRange(chunks, world.GetRegion(regionId).Chunks);
+			}
 
 			var region = new ScarifStructure(chunks);
 			region.Save("out.scrf2");
+
+			Console.WriteLine($"Wrote {Blocks:N} blocks");
+			Console.ReadKey();
 		}
 
 		private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)

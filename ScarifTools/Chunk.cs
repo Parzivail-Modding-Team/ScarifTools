@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Substrate.Nbt;
 
@@ -39,7 +40,7 @@ namespace ScarifTools
 			var z = level["zPos"].ToTagInt().Data;
 			var pos = new Coord2(x, z);
 
-			var sections = sectionsList.Select(node => ChunkSection.Load(pos, node.ToTagCompound())).Where(section => section != null).ToArray();
+			var sections = sectionsList.Select(node => ChunkSection.Load(dataVersion, pos, node.ToTagCompound())).Where(section => section != null).ToArray();
 			var tiles = level["TileEntities"]
 				.ToTagList()
 				.Select(node => node.ToTagCompound())
