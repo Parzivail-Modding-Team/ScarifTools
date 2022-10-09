@@ -35,43 +35,27 @@ namespace ScarifTools
 			var bitWidth = Math.Max((int)Math.Log2(paletteLength), 4);
 
 			BlockStates = new int[4096];
-			
-			var isTightlyPacked = dataVersion < 2529; // 20w17a (2529) changed the data packing
 
-			if (isTightlyPacked)
+			// In 20w17a+ the remaining bits in a long are left unused instead of
+			// the data being split and rolling over into the next long
+
+			var blocksPerLong = sizeof(long) * 8 / bitWidth;
+
+			var longIdx = 0;
+			var bitIdx = 0;
+			BitArray bArr = null;
+
+			for (var i = 0; i < BlockStates.Length; i++)
 			{
-				var bArr = new BitArray(packedStates.SelectMany(BitConverter.GetBytes).ToArray());
-
-				var bitIdx = 0;
-				for (var i = 0; i < BlockStates.Length; i++)
+				if (i % blocksPerLong == 0)
 				{
-					BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
-					bitIdx += bitWidth;
+					bArr = new BitArray(BitConverter.GetBytes(packedStates[longIdx]));
+					longIdx++;
+					bitIdx = 0;
 				}
-			}
-			else
-			{
-				// In 20w17a+ the remaining bits in a long are left unused instead of
-				// the data being split and rolling over into the next long
 
-				var blocksPerLong = sizeof(long) * 8 / bitWidth;
-
-				var longIdx = 0;
-				var bitIdx = 0;
-				BitArray bArr = null;
-
-				for (var i = 0; i < BlockStates.Length; i++)
-				{
-					if (i % blocksPerLong == 0)
-					{
-						bArr = new BitArray(BitConverter.GetBytes(packedStates[longIdx]));
-						longIdx++;
-						bitIdx = 0;
-					}
-
-					BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
-					bitIdx += bitWidth;
-				}
+				BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
+				bitIdx += bitWidth;
 			}
 		}
 
@@ -93,13 +77,14 @@ namespace ScarifTools
 		public static ChunkSection Load(int dataVersion, Coord2 pos, TagNodeCompound tag)
 		{
 			var y = tag["Y"].ToTagByte().Data;
+			var blockStatesTag = tag["block_states"].ToTagCompound();
 
-			if (!tag.ContainsKey("Palette"))
+			if (!blockStatesTag.ContainsKey("data"))
 				return null;
 
-			var palette = tag["Palette"].ToTagList().Select(tagNode => BlockState.Load(tagNode.ToTagCompound())).ToArray();
+			var palette = blockStatesTag["palette"].ToTagList().Select(tagNode => BlockState.Load(tagNode.ToTagCompound())).ToArray();
 
-			var blockStates = tag["BlockStates"].ToTagLongArray().Data;
+			var blockStates = blockStatesTag["data"].ToTagLongArray().Data;
 
 			return new ChunkSection(dataVersion, pos, y, blockStates, palette);
 		}

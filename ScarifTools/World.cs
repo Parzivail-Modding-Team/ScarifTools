@@ -10,22 +10,22 @@ namespace ScarifTools
 {
 	internal readonly struct World
 	{
-		private readonly string _levelPath;
+		private readonly string _worldPath;
 		private readonly Dictionary<RegionId, Region> _loadedRegions;
 		public readonly int DataVersion;
 
 
-		public World(string levelPath, int dataVersion)
+		public World(string worldPath, int dataVersion)
 		{
-			_levelPath = levelPath;
+			_worldPath = worldPath;
 			DataVersion = dataVersion;
 
 			_loadedRegions = new Dictionary<RegionId, Region>();
 		}
 
-		public static World Load(string filename)
+		public static World Load(string worldPath)
 		{
-			var nf = new NBTFile(filename);
+			var nf = new NBTFile(Path.Combine(worldPath, "level.dat"));
 
 			using var nbtstr = nf.GetDataInputStream();
 			var tree = new NbtTree(nbtstr);
@@ -34,16 +34,12 @@ namespace ScarifTools
 
 			var dataVersion = root["DataVersion"].ToTagInt().Data;
 
-			return new World(filename, dataVersion);
+			return new World(worldPath, dataVersion);
 		}
 
 		public List<RegionId> GetRegions(string dimension = null)
 		{
-			var path = Path.GetDirectoryName(_levelPath);
-			if (path == null)
-				return null;
-
-			path = dimension == null ? Path.Combine(path, "region") : Path.Combine(path, dimension, "region");
+			var path = dimension == null ? Path.Combine(_worldPath, "region") : Path.Combine(_worldPath, dimension, "region");
 
 			var regions = new List<RegionId>();
 
@@ -75,11 +71,7 @@ namespace ScarifTools
 			if (_loadedRegions.ContainsKey(regionId))
 				return _loadedRegions[regionId];
 
-			var path = Path.GetDirectoryName(_levelPath);
-			if (path == null)
-				return null;
-
-			path = dimension == null ? Path.Combine(path, "region") : Path.Combine(path, dimension, "region");
+			var path = dimension == null ? Path.Combine(_worldPath, "region") : Path.Combine(_worldPath, dimension, "region");
 
 			var regionPath = Path.Combine(path, $"r.{pos.X}.{pos.Z}.mca");
 			if (!File.Exists(regionPath))

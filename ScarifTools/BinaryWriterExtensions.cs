@@ -10,32 +10,19 @@ namespace ScarifTools
 	{
 		public static void WriteNullTermString(this BinaryWriter bw, string s)
 		{
-			foreach (var c in s) bw.Write(c);
+			bw.Write(s.AsSpan());
 			bw.Write((byte)0);
 		}
 
-		public static void WriteNbt(this BinaryWriter bw, TagNodeCompound tag, MemoryStream ms)
+		public static void WriteNbt(this BinaryWriter bw, TagNodeCompound tag)
 		{
-			ms.SetLength(0);
+			using var ms = new MemoryStream();
 			new NbtTree(tag).WriteTo(ms);
 
 			bw.Write((int)ms.Length);
 
 			ms.Seek(0, SeekOrigin.Begin);
 			ms.CopyTo(bw.BaseStream);
-		}
-
-		public static void Write7BitEncodedInt(this BinaryWriter bw, int value)
-		{
-			// Write out an int 7 bits at a time.  The high bit of the byte,
-			// when on, tells reader to continue reading more bytes.
-			var v = (uint)value;   // support negative numbers
-			while (v >= 0x80)
-			{
-				bw.Write((byte)(v | 0x80));
-				v >>= 7;
-			}
-			bw.Write((byte)v);
 		}
 	}
 }

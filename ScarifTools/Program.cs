@@ -13,13 +13,12 @@ namespace ScarifTools
 
 		static void Main(string[] args)
 		{
-			var worldPath = @"E:\Forge\Mods\PSWG\PSWG15\run\saves\Development";
+			if (args.Length < 2) {
+				Console.Error.WriteLine("Too few arguments, expected 2");
+				Environment.Exit(1);
+			}
 
-			var levelPath = Path.Combine(worldPath, "level.dat");
-			var registryPath = Path.Combine(worldPath, "data", "fabricRegistry.dat");
-
-			// var registry = FabricRegistry.Load(registryPath);
-			var world = World.Load(levelPath);
+			var world = World.Load(args[0]);
 
 			var chunks = new Dictionary<Coord2, Chunk>();
 
@@ -29,10 +28,9 @@ namespace ScarifTools
 			}
 
 			var region = new ScarifStructure(chunks);
-			region.Save("out.scrf2");
+			region.Save(args[1]);
 
 			Console.WriteLine($"Wrote {Blocks:N} blocks");
-			Console.ReadKey();
 		}
 
 		private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)
@@ -79,7 +77,7 @@ namespace ScarifTools
 					zs.Write7BitEncodedInt(pos.Y);
 					zs.Write7BitEncodedInt(pos.Z);
 
-					zs.WriteNbt(tag, ms);
+					zs.WriteNbt(tag);
 				}
 
 				zs.Write7BitEncodedInt(chunk.Sections.Length);
@@ -96,7 +94,7 @@ namespace ScarifTools
 						zs.Write((byte)(hasProperties ? 1 : 0));
 
 						if (hasProperties)
-							zs.WriteNbt(paletteEntry.Properties, ms);
+							zs.WriteNbt(paletteEntry.Properties);
 					}
 
 					// Section length always 4096 (16^3)

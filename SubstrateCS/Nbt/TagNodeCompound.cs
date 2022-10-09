@@ -61,7 +61,7 @@ namespace Substrate.Nbt
         /// Makes a deep copy of the node.
         /// </summary>
         /// <returns>A new compound node containing new subnodes representing the same data.</returns>
-        public override TagNode Copy ()
+        public override TagNodeCompound Copy ()
         {
             var list = new TagNodeCompound();
             foreach (var (key, value) in _tags) {

@@ -30,21 +30,22 @@ namespace ScarifTools
 		{
 			var dataVersion = tag.Root["DataVersion"].ToTagInt().Data;
 
-			var level = tag.Root["Level"].ToTagCompound();
+			if (!tag.Root["Status"].ToTagString().Data.Equals("full"))
+				return null;
 
-			var sectionsList = level["Sections"].ToTagList();
+			var sectionsList = tag.Root["sections"].ToTagList();
 			if (sectionsList.Count == 0)
 				return null;
 
-			var x = level["xPos"].ToTagInt().Data;
-			var z = level["zPos"].ToTagInt().Data;
+			var x = tag.Root["xPos"].ToTagInt().Data;
+			var z = tag.Root["zPos"].ToTagInt().Data;
 			var pos = new Coord2(x, z);
 
 			var sections = sectionsList.Select(node => ChunkSection.Load(dataVersion, pos, node.ToTagCompound())).Where(section => section != null).ToArray();
-			var tiles = level["TileEntities"]
+			var tiles = tag.Root["block_entities"]
 				.ToTagList()
 				.Select(node => node.ToTagCompound())
-				.ToDictionary(node => new Coord3(node["x"].ToTagInt().Data, node["y"].ToTagInt().Data, node["z"].ToTagInt().Data), node => node);
+				.ToDictionary(node => new Coord3(node["x"].ToTagInt().Data, node["y"].ToTagInt().Data, node["z"].ToTagInt().Data));
 
 			return new Chunk(pos, sections, tiles);
 		}

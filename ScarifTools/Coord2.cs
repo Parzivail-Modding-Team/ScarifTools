@@ -72,5 +72,11 @@ namespace ScarifTools
 		{
 			return !left.Equals(right);
 		}
+
+		public void Deconstruct(out int x, out int z)
+		{
+			x = X;
+			z = Z;
+		}
 	}
 }
