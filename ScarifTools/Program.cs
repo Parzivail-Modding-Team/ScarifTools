@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ZstdNet;
 
 namespace ScarifTools
 {
@@ -53,30 +54,34 @@ namespace ScarifTools
 			using var fs = new BinaryWriter(File.Open(filename, FileMode.Create));
 
 			fs.Write(0x46524353); // "SCRF"
-			fs.Write(2); // Version 2
+			fs.Write(3); // Version 3
 			fs.Write(Chunks.Count);
 
-			var chunkOffsets = new Dictionary<Coord2, long>();
+			var chunks = new Dictionary<Coord2, int>();
 			var headerOffset = fs.BaseStream.Position;
 
 			const int headerEntrySize = sizeof(int) * 2 + sizeof(long);
 			fs.BaseStream.Seek(headerEntrySize * Chunks.Count, SeekOrigin.Current);
-			
-			using var ms = new MemoryStream();
-			
+
+			using var chunkMs = new MemoryStream();
+			var chunkData = new List<byte[]>();
+
 			foreach (var (coord, chunk) in Chunks)
 			{
-				chunkOffsets.Add(coord, fs.BaseStream.Position);
+				using var ms = new MemoryStream();
 
-				var zs = fs; //new BinaryWriter(new GZipStream(fs.BaseStream, CompressionLevel.Optimal));
+				var zs = new BinaryWriter(ms);
 
 				zs.Write7BitEncodedInt(chunk.Tiles.Count);
-				foreach (var (pos, tag) in chunk.Tiles)
+				foreach (var ((x, y, z), originalTag) in chunk.Tiles)
 				{
-					zs.Write7BitEncodedInt(pos.X);
-					zs.Write7BitEncodedInt(pos.Y);
-					zs.Write7BitEncodedInt(pos.Z);
+					zs.Write((byte)((x & 0x15) << 4 | z & 0x15));
+					zs.Write7BitEncodedInt(y);
 
+					var tag = originalTag.Copy();
+					tag.Remove("x");
+					tag.Remove("y");
+					tag.Remove("z");
 					zs.WriteNbt(tag);
 				}
 
@@ -102,14 +107,60 @@ namespace ScarifTools
 
 					Program.Blocks += section.BlockStates.Length;
 				}
+
+				var array = ms.ToArray();
+				var index = chunkData.FindIndex(array.SequenceEqual);
+				if (index < 0)
+				{
+					index = chunkData.Count;
+					chunkData.Add(array);
+				}
+				chunks.Add(coord, index);
 			}
 
-			fs.BaseStream.Seek(headerOffset, SeekOrigin.Begin);
-			foreach (var (coord, offset) in chunkOffsets)
+			const int chunksPerRegion = 16;
+
+			var regions = new byte[chunkData.Count / chunksPerRegion + 1][];
+			var chunkOffset = new long[chunkData.Count];
+
+			for (var i = 0; i < regions.Length; i++)
 			{
-				fs.Write(coord.X);
-				fs.Write(coord.Z);
-				fs.Write(offset);
+				using var ms = new MemoryStream();
+				for (var j = i * chunksPerRegion; j < chunkData.Count && j < (i + 1) * chunksPerRegion; j++)
+				{
+					chunkOffset[j] = ms.Position;
+					ms.Write(chunkData[i]);
+				}
+				regions[i] = ms.ToArray();
+			}
+
+			var dict = DictBuilder.TrainFromBuffer(regions);
+			byte[] compressedDict;
+			using (var dictCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
+				compressedDict = dictCompressor.Wrap(dict);
+
+			byte[][] compressedRegions;
+			using (var regionCompressor = new Compressor(new CompressionOptions(dict, 10)))
+				compressedRegions = (from region in regions select regionCompressor.Wrap(region)).ToArray();
+
+			fs.BaseStream.Seek(headerOffset, SeekOrigin.Begin);
+			foreach (var compressedRegion in compressedRegions)
+			{
+				fs.Write7BitEncodedInt(compressedRegion.Length);
+			}
+			fs.Write7BitEncodedInt(0);
+			foreach (var (coord, index) in chunks)
+			{
+				fs.Write7BitEncodedInt(coord.X);
+				fs.Write7BitEncodedInt(coord.Z);
+				fs.Write7BitEncodedInt(index / chunksPerRegion);
+				fs.Write7BitEncodedInt64(chunkOffset[index]);
+			}
+			fs.Write7BitEncodedInt(compressedDict.Length);
+			fs.Write(compressedDict);
+			foreach (var compressedRegion in compressedRegions)
+			{
+				fs.Write(compressedRegion);
 			}
 		}
 	}
