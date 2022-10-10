@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using Ionic.Zlib;
+using System.IO.Compression;
 using Substrate.Nbt;
 
 namespace Substrate.Core;
@@ -70,7 +70,7 @@ public class NBTFile
                     return new GZipStream(stream1, CompressionMode.Decompress);
                 case CompressionType.Zlib:
                     Stream stream2 = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    return new ZlibStream(stream2, CompressionMode.Decompress);
+                    return new ZLibStream(stream2, CompressionMode.Decompress);
                 case CompressionType.Deflate:
                     Stream stream3 = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     return new DeflateStream(stream3, CompressionMode.Decompress);
@@ -100,7 +100,7 @@ public class NBTFile
                 case CompressionType.GZip:
                     return new GZipStream(new NBTBuffer(this), CompressionMode.Compress);
                 case CompressionType.Zlib:
-                    return new ZlibStream(new NBTBuffer(this), CompressionMode.Compress);
+                    return new ZLibStream(new NBTBuffer(this), CompressionMode.Compress);
                 case CompressionType.Deflate:
                     return new DeflateStream(new NBTBuffer(this), CompressionMode.Compress);
                 default:

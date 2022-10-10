@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Ionic.Zlib;
+using System.IO.Compression;
 using Substrate.Nbt;
 
 namespace ScarifTools;
@@ -65,7 +65,7 @@ public record Region(Coord2 Pos, Dictionary<Coord2, Chunk> Chunks)
                     break;
 
                 case 2:
-                    new ZlibStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
+                    new ZLibStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
                     break;
 
                 default:
