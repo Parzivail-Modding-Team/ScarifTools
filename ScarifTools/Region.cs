@@ -11,7 +11,7 @@ public record Region(Coord2 Pos, Dictionary<Coord2, Chunk> Chunks)
 {
     public Chunk GetChunk(Coord2 chunkPos)
     {
-        return Chunks.ContainsKey(chunkPos) ? Chunks[chunkPos] : null;
+        return Chunks.GetValueOrDefault(chunkPos);
     }
 
     public BlockState GetBlock(Coord3 blockPos)

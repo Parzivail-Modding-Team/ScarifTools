@@ -4,12 +4,12 @@ public readonly record struct Coord2(int X, int Z)
 {
     public static readonly Coord2 Zero = new(0, 0);
 
-    public static implicit operator Coord2(long left)
+    public static explicit operator Coord2(long left)
     {
         return new Coord2((int)(left >> 32), (int)(left & 0xFFFFFFFF));
     }
 
-    public static implicit operator long(Coord2 left)
+    public static explicit operator long(Coord2 left)
     {
         return ((long)left.X << 32) | (uint)left.Z;
     }

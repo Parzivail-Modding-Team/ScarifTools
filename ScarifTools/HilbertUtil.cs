@@ -5,7 +5,7 @@ namespace ScarifTools;
 /// </summary>
 /// <cite href="http://and-what-happened.blogspot.com/2011/08/fast-2d-and-3d-hilbert-curves-and.html"/>
 /// <cite href="http://threadlocalmutex.com/?p=149"/>
-public class HibertUtil
+public static class HilbertUtil
 {
     private static readonly byte[] HilbertToMortonTable =
     {

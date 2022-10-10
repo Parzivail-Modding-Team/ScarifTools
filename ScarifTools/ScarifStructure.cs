@@ -109,7 +109,7 @@ internal readonly struct ScarifStructure
                         var stateIndex = layout switch
                         {
                             ChunkLayoutFormat.Linear => i,
-                            ChunkLayoutFormat.Hilbert => ChunkSection.GetBlockIndex(HibertUtil.SampleCurve(i)),
+                            ChunkLayoutFormat.Hilbert => ChunkSection.GetBlockIndex(HilbertUtil.SampleCurve(i)),
                             _ => throw new ArgumentOutOfRangeException(nameof(layout))
                         };
 
