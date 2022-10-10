@@ -159,7 +159,7 @@ internal readonly struct ScarifStructure
         }
 
         // Train compression dictionary
-        var dict = DictBuilder.TrainFromBuffer(regions);
+        var dict = DictBuilder.TrainFromBuffer(regions, 32768);
         byte[] compressedDict;
         using (var dictCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
             compressedDict = dictCompressor.Wrap(dict);
@@ -174,32 +174,42 @@ internal readonly struct ScarifStructure
         using var fs = File.Open(filename, FileMode.Create);
         var scrfWriter = new BinaryWriter(fs);
 
-        // Write header location data
+        // Write header
         scrfWriter.Write(0x46524353); // "SCRF"
         scrfWriter.Write(3); // Version 3
         scrfWriter.Write(chunks.Count);
         scrfWriter.Write(compressedRegions.Length);
 
+        // Write offset headers to temporary buffer for compression
+        using var headerMemStream = MemoryStreamManager.GetStream("header");
+        var headerWriter = new BinaryWriter(headerMemStream);
+
         // Write chunk keys and offsets
         foreach (var (coord, index) in chunks)
         {
             // Chunk position
-            scrfWriter.Write7BitEncodedInt(coord.X);
-            scrfWriter.Write7BitEncodedInt(coord.Z);
+            headerWriter.Write7BitEncodedInt(coord.X);
+            headerWriter.Write7BitEncodedInt(coord.Z);
             // Parent region
-            scrfWriter.Write7BitEncodedInt(index / chunksPerRegion);
+            headerWriter.Write7BitEncodedInt(index / chunksPerRegion);
             // Seek offset within region
-            scrfWriter.Write7BitEncodedInt64(chunkOffset[index]);
+            headerWriter.Write7BitEncodedInt64(chunkOffset[index]);
         }
 
         // Write region lengths
         foreach (var compressedRegion in compressedRegions)
-            scrfWriter.Write7BitEncodedInt(compressedRegion.Length);
+            headerWriter.Write7BitEncodedInt(compressedRegion.Length);
 
-        // Write compression dictionary length
-        scrfWriter.Write7BitEncodedInt(compressedDict.Length);
+        // Compress and write offset headers
+        byte[] compressedHeader;
+        using (var headerCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
+            compressedHeader = headerCompressor.Wrap(headerMemStream.ToArray());
+
+        scrfWriter.Write7BitEncodedInt(compressedHeader.Length);
+        scrfWriter.Write(compressedHeader);
 
         // Write compression dictionary
+        scrfWriter.Write7BitEncodedInt(compressedDict.Length);
         scrfWriter.Write(compressedDict);
 
         // Write regions
