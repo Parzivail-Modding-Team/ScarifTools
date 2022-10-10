@@ -1,6 +1,6 @@
 ﻿namespace ScarifTools;
 
-public record Coord3(int X, int Y, int Z)
+public readonly record struct Coord3(int X, int Y, int Z)
 {
     public static readonly Coord3 Zero = new(0, 0, 0);
 
