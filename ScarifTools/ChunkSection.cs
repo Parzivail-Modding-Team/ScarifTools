@@ -10,7 +10,6 @@ public class ChunkSection
     public readonly Coord2 Pos;
     public readonly byte Y;
     public readonly int[] BlockStates;
-    public readonly long[] PackedBlockStates;
     public readonly BlockState[] Palette;
 
     public ChunkSection(int dataVersion, Coord2 pos, byte y, long[] packedStates, BlockState[] palette)
@@ -18,8 +17,6 @@ public class ChunkSection
         Pos = pos;
         Y = y;
         Palette = palette;
-
-        PackedBlockStates = packedStates;
 
         var paletteLength = palette.Length;
         paletteLength--;
@@ -57,6 +54,15 @@ public class ChunkSection
         }
     }
 
+    public ChunkSection(int dataVersion, Coord2 pos, byte y, BlockState[] palette)
+    {
+        Pos = pos;
+        Y = y;
+        Palette = palette;
+        BlockStates = new int[4096];
+        Array.Fill(BlockStates, 0);
+    }
+
     private static int TakeBits(BitArray b, int i, int len)
     {
         var value = 0;
@@ -82,10 +88,10 @@ public class ChunkSection
         var y = tag["Y"].ToTagByte().Data;
         var blockStatesTag = tag["block_states"].ToTagCompound();
 
-        if (!blockStatesTag.ContainsKey("data"))
-            return null;
-
         var palette = blockStatesTag["palette"].ToTagList().Select(tagNode => BlockState.Load(tagNode.ToTagCompound())).ToArray();
+
+        if (!blockStatesTag.ContainsKey("data"))
+            return palette[0].Name == "minecraft:air" ? null : new ChunkSection(dataVersion, pos, y, palette);
 
         var blockStates = blockStatesTag["data"].ToTagLongArray().Data;
 

@@ -23,6 +23,7 @@ class Program
         var region = new ScarifStructure(chunks);
         var (numBlocks, fileSize, dictSize, regionSize, compressedRegionSize) = region.Save(args[1]);
 
+        Console.WriteLine($"Total chunks          : {chunks.Count:N0}");
         Console.WriteLine($"Total blocks          : {numBlocks:N0}");
         Console.WriteLine($"Total size            : {fileSize:N0} bytes");
         Console.WriteLine($"Dictionary size       : {dictSize:N0} bytes");
