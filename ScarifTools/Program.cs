@@ -31,7 +31,7 @@ class Program
         Console.WriteLine($"Compressed region size: {compressedRegionSize:N0} bytes");
         Console.WriteLine($"Region compression    : {compressedRegionSize / (double)regionSize * 100:F3}%");
         Console.WriteLine($"Region bits per block : {compressedRegionSize * 8 / (double)numBlocks:F7}");
-        Console.WriteLine($"Blocks per region bits: {(double)numBlocks / (compressedRegionSize * 8):F2}");
+        Console.WriteLine($"Blocks per region bit : {(double)numBlocks / (compressedRegionSize * 8):F2}");
     }
 
     private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)
