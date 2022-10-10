@@ -159,7 +159,7 @@ internal readonly struct ScarifStructure
         }
 
         // Train compression dictionary
-        var dict = DictBuilder.TrainFromBuffer(regions, 32768);
+        var dict = DictBuilder.TrainFromBuffer(regions);
         byte[] compressedDict;
         using (var dictCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
             compressedDict = dictCompressor.Wrap(dict);
