@@ -64,8 +64,8 @@ internal readonly struct ScarifStructure
         {
             numBlocks += chunk.Sections.Sum(section => section.BlockStates.Length);
 
-            var layout = ChunkLayoutFormat.Linear;
-            // foreach (var layout in Enum.GetValues(typeof(ChunkLayoutFormat)).Cast<ChunkLayoutFormat>())
+            // var layout = ChunkLayoutFormat.Linear;
+            foreach (var layout in Enum.GetValues(typeof(ChunkLayoutFormat)).Cast<ChunkLayoutFormat>())
             {
                 using var chunkMemStream = new MemoryStream();
                 var chunkWriter = new BinaryWriter(chunkMemStream);
@@ -177,7 +177,7 @@ internal readonly struct ScarifStructure
 
         // Compress regions
         byte[][] compressedRegions;
-        using (var regionCompressor = new Compressor(new CompressionOptions(dict, 10)))
+        using (var regionCompressor = new Compressor(new CompressionOptions(dict, 19)))
             compressedRegions = regions
                 .Select(region => regionCompressor.Wrap(region))
                 .ToArray();
