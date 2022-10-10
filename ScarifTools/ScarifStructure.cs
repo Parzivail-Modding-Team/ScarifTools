@@ -8,14 +8,6 @@ using ZstdNet;
 
 namespace ScarifTools;
 
-public enum SectionLayoutFormat : byte
-{
-    Linear = 0,
-    Hilbert = 1
-}
-
-public record struct SectionData(SectionLayoutFormat Format, byte[] Data, int CompressionScore);
-
 public record struct ChunkData(Coord2 Position, byte[] Data, string DataChecksum);
 
 internal readonly struct ScarifStructure
@@ -27,43 +19,6 @@ internal readonly struct ScarifStructure
     public ScarifStructure(Dictionary<Coord2, Chunk> chunks)
     {
         Chunks = chunks;
-    }
-
-    private static SectionData EncodeSectionStateIndices(int[] states)
-    {
-        using var regionCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel));
-
-        SectionData? smallestSectionData = null;
-
-        foreach (var layout in Enum.GetValues(typeof(SectionLayoutFormat)).Cast<SectionLayoutFormat>())
-        {
-            using var memStream = MemoryStreamManager.GetStream("section");
-            var sectionWriter = new BinaryWriter(memStream);
-
-            // Section length always 4096 (16^3)
-            for (var i = 0; i < states.Length; i++)
-            {
-                var stateIndex = layout switch
-                {
-                    SectionLayoutFormat.Linear => i,
-                    SectionLayoutFormat.Hilbert => ChunkSection.GetBlockIndex(HilbertUtil.SampleCurve(i)),
-                    _ => throw new ArgumentOutOfRangeException(nameof(layout))
-                };
-
-                var state = states[stateIndex];
-                sectionWriter.Write7BitEncodedInt(state);
-            }
-
-            var data = memStream.ToArray();
-            var layoutData = new SectionData(layout, data, regionCompressor.Wrap(data).Length);
-            if (smallestSectionData == null || layoutData.CompressionScore < smallestSectionData.Value.CompressionScore)
-                smallestSectionData = layoutData;
-        }
-
-        if (smallestSectionData == null)
-            throw new InvalidOperationException();
-
-        return smallestSectionData.Value;
     }
 
     public (int NumBlocks, long FileLength, int DictionarySize, int TotalRegionSize, int CompressedRegionSize) Save(string filename)
@@ -116,9 +71,9 @@ internal readonly struct ScarifStructure
                         chunkWriter.WriteNbt(paletteEntry.Properties);
                 }
 
-                var (layout, stateIndices, _) = EncodeSectionStateIndices(section.BlockStates);
-                chunkWriter.Write((byte)layout);
-                chunkWriter.Write(stateIndices);
+                // Section length always 4096 (16^3)
+                foreach (var state in section.BlockStates)
+                    chunkWriter.Write7BitEncodedInt(state);
             }
 
             var array = chunkMemStream.ToArray();
