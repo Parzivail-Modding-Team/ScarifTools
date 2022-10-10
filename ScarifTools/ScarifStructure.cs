@@ -1,9 +1,19 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using ZstdNet;
 
 namespace ScarifTools;
+
+public enum ChunkLayoutFormat : byte
+{
+    Linear = 0,
+    Hilbert = 1
+}
+
+public record struct ChunkLayoutData(Coord2 Position, ChunkLayoutFormat Layout, byte[] Data, string DataChecksum, int CompressionScore);
 
 internal readonly struct ScarifStructure
 {
@@ -12,6 +22,12 @@ internal readonly struct ScarifStructure
     public ScarifStructure(Dictionary<Coord2, Chunk> chunks)
     {
         Chunks = chunks;
+    }
+
+    private static int GetCompressionScore(byte[] data)
+    {
+        using var compressor = new Compressor(new CompressionOptions(10));
+        return compressor.Wrap(data).Length;
     }
 
     public (int NumBlocks, long FileLength) Save(string filename)
@@ -37,69 +53,102 @@ internal readonly struct ScarifStructure
         var headerLength = chunkHeaderEntrySize * Chunks.Count + compressionDictHeaderEntrySize + regionHeaderEntrySize * numRegions;
         scrfWriter.BaseStream.Seek(headerLength, SeekOrigin.Current);
 
-        var chunkData = new List<byte[]>();
+        var chunkData = new List<ChunkLayoutData>();
 
         // TODO: entities?
-        // TODO: can all of the Write7BitEncodedInt in the chunk data be replaced with Write since it'll be compressed anyway? how does it affect compression?
+
+        using var sha = SHA512.Create();
 
         // Encode each chunk
         foreach (var (coord, chunk) in Chunks)
         {
-            using var chunkMemStream = new MemoryStream();
-            var chunkWriter = new BinaryWriter(chunkMemStream);
+            numBlocks += chunk.Sections.Sum(section => section.BlockStates.Length);
 
-            chunkWriter.Write7BitEncodedInt(chunk.Tiles.Count);
-            foreach (var ((x, y, z), originalTag) in chunk.Tiles)
+            var layout = ChunkLayoutFormat.Linear;
+            // foreach (var layout in Enum.GetValues(typeof(ChunkLayoutFormat)).Cast<ChunkLayoutFormat>())
             {
-                chunkWriter.Write((byte)((x & 0x15) << 4 | z & 0x15));
-                chunkWriter.Write7BitEncodedInt(y);
+                using var chunkMemStream = new MemoryStream();
+                var chunkWriter = new BinaryWriter(chunkMemStream);
 
-                // Write tag without redundant position data
-                var tag = originalTag.Copy();
-                tag.Remove("x");
-                tag.Remove("y");
-                tag.Remove("z");
-                chunkWriter.WriteNbt(tag);
-            }
+                chunkWriter.Write((byte)layout);
 
-            chunkWriter.Write7BitEncodedInt(chunk.Sections.Length);
-            foreach (var section in chunk.Sections)
-            {
-                chunkWriter.Write(section.Y);
-
-                chunkWriter.Write7BitEncodedInt(section.Palette.Length);
-                foreach (var paletteEntry in section.Palette)
+                chunkWriter.Write7BitEncodedInt(chunk.Tiles.Count);
+                foreach (var ((x, y, z), originalTag) in chunk.Tiles)
                 {
-                    chunkWriter.Write(paletteEntry.Name);
-                    var hasProperties = paletteEntry.Properties != null;
+                    chunkWriter.Write((byte)((x & 0x15) << 4 | z & 0x15));
+                    chunkWriter.Write7BitEncodedInt(y);
 
-                    chunkWriter.Write((byte)(hasProperties ? 1 : 0));
-
-                    if (hasProperties)
-                        chunkWriter.WriteNbt(paletteEntry.Properties);
+                    // Write tag without redundant position data
+                    var tag = originalTag.Copy();
+                    tag.Remove("x");
+                    tag.Remove("y");
+                    tag.Remove("z");
+                    chunkWriter.WriteNbt(tag);
                 }
 
-                // Section length always 4096 (16^3)
-                for (var i = 0; i < section.BlockStates.Length; i++)
+                chunkWriter.Write7BitEncodedInt(chunk.Sections.Length);
+                foreach (var section in chunk.Sections)
                 {
-                    var hilbertSample = HibertUtil.SampleCurve(i);
-                    var state = section.BlockStates[ChunkSection.GetBlockIndex(hilbertSample)];
-                    chunkWriter.Write7BitEncodedInt(state);
+                    chunkWriter.Write(section.Y);
+
+                    chunkWriter.Write7BitEncodedInt(section.Palette.Length);
+                    foreach (var paletteEntry in section.Palette)
+                    {
+                        chunkWriter.Write(paletteEntry.Name);
+                        var hasProperties = paletteEntry.Properties != null;
+
+                        chunkWriter.Write((byte)(hasProperties ? 1 : 0));
+
+                        if (hasProperties)
+                            chunkWriter.WriteNbt(paletteEntry.Properties);
+                    }
+
+                    // Section length always 4096 (16^3)
+                    for (var i = 0; i < section.BlockStates.Length; i++)
+                    {
+                        var stateIndex = layout switch
+                        {
+                            ChunkLayoutFormat.Linear => i,
+                            ChunkLayoutFormat.Hilbert => ChunkSection.GetBlockIndex(HibertUtil.SampleCurve(i)),
+                            _ => throw new ArgumentOutOfRangeException(nameof(layout))
+                        };
+
+                        var state = section.BlockStates[stateIndex];
+                        chunkWriter.Write7BitEncodedInt(state);
+                    }
                 }
 
-                numBlocks += section.BlockStates.Length;
+                var array = chunkMemStream.ToArray();
+                var checksum = Convert.ToHexString(sha.ComputeHash(array));
+                var compressionScore = GetCompressionScore(array);
+
+                // Check for chunks with duplicate data checksums
+                var chunkIdx = chunkData.FindIndex(key => key.DataChecksum == checksum);
+
+                if (chunkIdx < 0)
+                {
+                    // If a duplicate chunk is NOT found, see if a higher-entropy encoding of this chunk exists
+
+                    chunkIdx = chunkData.FindIndex(key => key.Position == coord);
+                    if (chunkIdx < 0)
+                    {
+                        // If no duplicate chunk exists AND no other encodings of this chunk exist, insert this one
+                        chunkIdx = chunkData.Count;
+                        chunkData.Add(new ChunkLayoutData(coord, layout, array, checksum, compressionScore));
+                    }
+                    else if (chunkData[chunkIdx].CompressionScore <= compressionScore)
+                    {
+                        // A lower-entropy encoding exists, do nothing
+                    }
+                    else
+                    {
+                        // This encoding has lower entropy, replace the old one
+                        chunkData[chunkIdx] = new ChunkLayoutData(coord, layout, array, checksum, compressionScore);
+                    }
+                }
+
+                chunks[coord] = chunkIdx;
             }
-
-            var array = chunkMemStream.ToArray();
-            var index = chunkData.FindIndex(array.SequenceEqual);
-
-            if (index < 0)
-            {
-                index = chunkData.Count;
-                chunkData.Add(array);
-            }
-
-            chunks[coord] = index;
         }
 
         // Compile chunks into regions
@@ -114,7 +163,7 @@ internal readonly struct ScarifStructure
             for (var j = i * chunksPerRegion; j < chunkData.Count && j < (i + 1) * chunksPerRegion; j++)
             {
                 chunkOffset[j] = ms.Position;
-                ms.Write(chunkData[i]);
+                ms.Write(chunkData[i].Data);
             }
 
             regions[i] = ms.ToArray();

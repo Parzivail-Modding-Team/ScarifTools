@@ -25,7 +25,7 @@ class Program
         var region = new ScarifStructure(chunks);
         var (numBlocks, fileSize) = region.Save(args[1]);
 
-        Console.WriteLine($"Wrote {numBlocks:N} blocks into {fileSize:N} bytes ({(fileSize * 8) / (double)numBlocks:F3} bits/block)");
+        Console.WriteLine($"Wrote {numBlocks:N0} blocks into {fileSize:N0} bytes ({(fileSize * 8) / (double)numBlocks:F5} bits/block, {(double)numBlocks / (fileSize * 8):F2} blocks/bit)");
     }
 
     private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)
