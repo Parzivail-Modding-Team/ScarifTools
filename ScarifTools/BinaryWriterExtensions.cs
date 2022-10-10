@@ -1,28 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 using Substrate.Nbt;
 
-namespace ScarifTools
+namespace ScarifTools;
+
+internal static class BinaryWriterExtensions
 {
-	internal static class BinaryWriterExtensions
-	{
-		public static void WriteNullTermString(this BinaryWriter bw, string s)
-		{
-			bw.Write(s.AsSpan());
-			bw.Write((byte)0);
-		}
+    public static void WriteNbt(this BinaryWriter bw, TagNodeCompound tag)
+    {
+        using var ms = new MemoryStream();
+        new NbtTree(tag).WriteTo(ms);
 
-		public static void WriteNbt(this BinaryWriter bw, TagNodeCompound tag)
-		{
-			using var ms = new MemoryStream();
-			new NbtTree(tag).WriteTo(ms);
+        bw.Write((int)ms.Length);
 
-			bw.Write((int)ms.Length);
-
-			ms.Seek(0, SeekOrigin.Begin);
-			ms.CopyTo(bw.BaseStream);
-		}
-	}
+        ms.Seek(0, SeekOrigin.Begin);
+        ms.CopyTo(bw.BaseStream);
+    }
 }

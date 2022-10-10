@@ -1,36 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using Ionic.Zlib;
+﻿using System.IO;
 
-namespace Substrate.Core
+namespace Substrate.Core;
+
+public class PlayerFile : NBTFile
 {
-    public class PlayerFile : NBTFile
+    public PlayerFile(string path)
+        : base(path)
     {
-        public PlayerFile (string path)
-            : base(path)
+    }
+
+    public PlayerFile(string path, string name)
+        : base("")
+    {
+        if (!Directory.Exists(path))
         {
+            Directory.CreateDirectory(path);
         }
 
-        public PlayerFile (string path, string name)
-            : base("")
-        {
-            if (!Directory.Exists(path)) {
-                Directory.CreateDirectory(path);
-            }
+        var file = name + ".dat";
+        FileName = Path.Combine(path, file);
+    }
 
-            var file = name + ".dat";
-            FileName = Path.Combine(path, file);
+    public static string NameFromFilename(string filename)
+    {
+        if (filename.EndsWith(".dat"))
+        {
+            return filename.Remove(filename.Length - 4);
         }
 
-        public static string NameFromFilename (string filename)
-        {
-            if (filename.EndsWith(".dat")) {
-                return filename.Remove(filename.Length - 4);
-            }
-
-            return filename;
-        }
+        return filename;
     }
 }

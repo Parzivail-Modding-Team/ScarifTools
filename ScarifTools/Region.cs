@@ -5,103 +5,87 @@ using System.Linq;
 using Ionic.Zlib;
 using Substrate.Nbt;
 
-namespace ScarifTools
+namespace ScarifTools;
+
+public record Region(Coord2 Pos, Dictionary<Coord2, Chunk> Chunks)
 {
-	internal class Region
-	{
-		public readonly Coord2 Pos;
-		public readonly Dictionary<Coord2, Chunk> Chunks;
+    public Chunk GetChunk(Coord2 chunkPos)
+    {
+        return Chunks.ContainsKey(chunkPos) ? Chunks[chunkPos] : null;
+    }
 
-		private Region(Coord2 pos, Dictionary<Coord2, Chunk> chunks)
-		{
-			Pos = pos;
-			Chunks = chunks;
-		}
+    public BlockState GetBlock(Coord3 blockPos)
+    {
+        var chunk = GetChunk((blockPos >> 4).Flatten());
+        return chunk?.GetBlock(blockPos);
+    }
 
-		public Chunk GetChunk(Coord2 chunkPos)
-		{
-			return Chunks.ContainsKey(chunkPos) ? Chunks[chunkPos] : null;
-		}
+    public static Region Load(string filename)
+    {
+        var chunks = new Dictionary<Coord2, Chunk>();
 
-		public BlockState GetBlock(Coord3 blockPos)
-		{
-			var chunk = GetChunk((blockPos >> 4).Flatten());
-			return chunk == null ? null : chunk.GetBlock(blockPos);
-		}
+        using var file = new BinaryReader(File.Open(filename, FileMode.Open));
 
-		public static Region Load(string filename)
-		{
-			var chunks = new Dictionary<Coord2, Chunk>();
+        const int regionSizeChunks = 32 * 32;
+        var chunkLocations = file.ReadBytes(regionSizeChunks * sizeof(int));
+        var chunkTimestamps = file.ReadBytes(regionSizeChunks * sizeof(int));
 
-			using var file = new BinaryReader(File.Open(filename, FileMode.Open));
+        for (var headerPosition = 0; headerPosition < regionSizeChunks * sizeof(int); headerPosition += sizeof(int))
+        {
+            //Get info about the chunk in the file
+            var chunkOffsetInfo = new byte[4];
+            chunkOffsetInfo[0] = 0;
+            Array.Copy(chunkLocations, headerPosition, chunkOffsetInfo, 1, 3);
 
-			var chunkLocations = new byte[4096];
-			var chunkTimestamps = new byte[4096];
+            var chunkOffset = BitConverter.ToInt32(BitConverter.IsLittleEndian ? chunkOffsetInfo.Reverse().ToArray() : chunkOffsetInfo, 0) * regionSizeChunks * sizeof(int);
+            var chunkSectors = chunkLocations[headerPosition + 3];
 
-			file.Read(chunkLocations, 0, 4096);
-			file.Read(chunkTimestamps, 0, 4096);
+            var chunkTimestampInfo = new byte[4];
+            Array.Copy(chunkTimestamps, headerPosition, chunkTimestampInfo, 0, 4);
 
-			for (var headerPosition = 0; headerPosition < 4096; headerPosition += 4) // 32*32 chunks
-			{
-				//Get info about the chunk in the file
-				var chunkOffsetInfo = new byte[4];
-				chunkOffsetInfo[0] = 0;
-				Array.Copy(chunkLocations, headerPosition, chunkOffsetInfo, 1, 3);
+            var chunkTimestamp = BitConverter.ToInt32(BitConverter.IsLittleEndian ? chunkTimestampInfo.Reverse().ToArray() : chunkTimestampInfo, 0);
 
-				long chunkOffset = BitConverter.ToInt32(BitConverter.IsLittleEndian ? chunkOffsetInfo.Reverse().ToArray() : chunkOffsetInfo, 0) * 4096;
-				var chunkSectors = chunkLocations[headerPosition + 3];
+            if (chunkOffset < 2 || chunkSectors < 1)
+                continue; // Nonexistent or invalid chunk
 
-				var chunkTimestampInfo = new byte[4];
-				Array.Copy(chunkTimestamps, headerPosition, chunkTimestampInfo, 0, 4);
+            //Read the chunk info
+            file.BaseStream.Seek(chunkOffset, SeekOrigin.Begin);
 
-				var chunkTimestamp = BitConverter.ToInt32(BitConverter.IsLittleEndian ? chunkTimestampInfo.Reverse().ToArray() : chunkTimestampInfo, 0);
+            var chunkLengthInfo = file.ReadBytes(4);
+            var chunkLength = BitConverter.ToUInt32(BitConverter.IsLittleEndian ? chunkLengthInfo.Reverse().ToArray() : chunkLengthInfo, 0);
+            var chunkCompressionType = file.ReadByte();
+            var compressedChunkData = file.ReadBytes((int)chunkLength - 1);
 
-				if (chunkOffset < 2 || chunkSectors < 1) continue; //Non existing or invalid chunk
+            var uncompressedChunkData = new MemoryStream();
 
-				//Read the chunk info
-				file.BaseStream.Seek(chunkOffset, SeekOrigin.Begin);
+            switch (chunkCompressionType)
+            {
+                case 1:
+                    new GZipStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
+                    break;
 
-				var chunkLengthInfo = new byte[4];
-				file.Read(chunkLengthInfo, 0, 4);
+                case 2:
+                    new ZlibStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
+                    break;
 
-				var chunkLength = BitConverter.ToUInt32(BitConverter.IsLittleEndian ? chunkLengthInfo.Reverse().ToArray() : chunkLengthInfo, 0);
+                default:
+                    throw new Exception("Unrecognized compression type");
+            }
 
-				var chunkCompressionType = file.ReadByte();
+            uncompressedChunkData.Seek(0, SeekOrigin.Begin);
 
-				var compressedChunkData = new byte[chunkLength - 1];
-				file.Read(compressedChunkData, 0, (int)chunkLength - 1);
+            var chunk = Chunk.Load(new NbtTree(uncompressedChunkData));
+            if (chunk == null)
+                continue;
 
-				var uncompressedChunkData = new MemoryStream();
+            chunks.Add(chunk.Pos, chunk);
+        }
 
-				switch (chunkCompressionType)
-				{
-					case 1:
-						new GZipStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
-						break;
+        var parts = Path.GetFileNameWithoutExtension(filename).Split('.');
 
-					case 2:
-						new ZlibStream(new MemoryStream(compressedChunkData), CompressionMode.Decompress).CopyTo(uncompressedChunkData);
-						break;
+        var x = parts[1];
+        var z = parts[2];
 
-					default:
-						throw new Exception("Unrecognized compression type");
-				}
-
-				uncompressedChunkData.Seek(0, SeekOrigin.Begin);
-
-				var chunk = Chunk.Load(new NbtTree(uncompressedChunkData));
-				if (chunk == null)
-					continue;
-
-				chunks.Add(chunk.Pos, chunk);
-			}
-
-			var parts = Path.GetFileNameWithoutExtension(filename).Split('.');
-
-			var x = parts[1];
-			var z = parts[2];
-
-			return new Region(new Coord2(int.Parse(x), int.Parse(z)), chunks);
-		}
-	}
+        return new Region(new Coord2(int.Parse(x), int.Parse(z)), chunks);
+    }
 }
