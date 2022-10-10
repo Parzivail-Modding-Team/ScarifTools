@@ -18,14 +18,20 @@ class Program
         var chunks = new Dictionary<Coord2, Chunk>();
 
         foreach (var regionId in world.GetRegions())
-        {
             AddRange(chunks, world.GetRegion(regionId).Chunks);
-        }
 
         var region = new ScarifStructure(chunks);
-        var (numBlocks, fileSize) = region.Save(args[1]);
+        var (numBlocks, fileSize, dictSize, regionSize, compressedRegionSize) = region.Save(args[1]);
 
-        Console.WriteLine($"Wrote {numBlocks:N0} blocks into {fileSize:N0} bytes ({(fileSize * 8) / (double)numBlocks:F5} bits/block, {(double)numBlocks / (fileSize * 8):F2} blocks/bit)");
+        Console.WriteLine($"Total blocks           : {numBlocks:N0}");
+        Console.WriteLine($"Total bytes            : {fileSize:N0}");
+        Console.WriteLine($"Dictionary size        : {dictSize:N0}");
+        Console.WriteLine($"Metadata overhead bytes: {fileSize - compressedRegionSize - dictSize:N0}");
+        Console.WriteLine($"Region bytes           : {regionSize:N0}");
+        Console.WriteLine($"Compressed region bytes: {compressedRegionSize:N0}");
+        Console.WriteLine($"Region compression     : {compressedRegionSize / (double)regionSize * 100:F3}%");
+        Console.WriteLine($"Region bits per block  : {compressedRegionSize * 8 / (double)numBlocks:F7}");
+        Console.WriteLine($"Blocks per region bits : {(double)numBlocks / (compressedRegionSize * 8):F2}");
     }
 
     private static void AddRange<T1, T2>(Dictionary<T1, T2> dest, Dictionary<T1, T2> src)
