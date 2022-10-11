@@ -4,9 +4,82 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.IO;
+using Substrate.Nbt;
 using ZstdNet;
 
 namespace ScarifTools;
+
+public enum SpecialBlockProperties : byte
+{
+    ExtendedProperty = 255,
+    AxisX = 0,
+    AxisY = 1,
+    AxisZ = 2,
+    LitFalse = 3,
+    LitTrue = 4,
+    Level0 = 5,
+    Level1 = 6,
+    Level2 = 7,
+    Level3 = 8,
+    Level4 = 9,
+    Level5 = 10,
+    Level6 = 11,
+    Level7 = 12,
+    Level8 = 13,
+    Level9 = 14,
+    Level10 = 15,
+    Level11 = 16,
+    Level12 = 17,
+    Level13 = 18,
+    Level14 = 19,
+    Level15 = 20,
+    HalfLower = 21,
+    HalfUpper = 22,
+    WaterloggedFalse = 23,
+    WaterloggedTrue = 24,
+    FacingUp = 25,
+    FacingDown = 26,
+    FacingNorth = 27,
+    FacingSouth = 28,
+    FacingEast = 29,
+    FacingWest = 30,
+    Age = 31,
+    SnowyFalse = 32,
+    SnowyTrue = 33,
+    Distance = 34,
+    PersistentFalse = 35,
+    PersistentTrue = 36,
+    Power0 = 37,
+    Power1 = 38,
+    Power2 = 39,
+    Power3 = 40,
+    Power4 = 41,
+    Power5 = 42,
+    Power6 = 43,
+    Power7 = 44,
+    Power8 = 45,
+    Power9 = 46,
+    Power10 = 47,
+    Power11 = 48,
+    Power12 = 49,
+    Power13 = 50,
+    Power14 = 51,
+    Power15 = 52,
+    UpFalse = 53,
+    UpTrue = 54,
+    DownFalse = 55,
+    DownTrue = 56,
+    NorthFalse = 57,
+    NorthTrue = 58,
+    SouthFalse = 59,
+    SouthTrue = 60,
+    EastFalse = 61,
+    EastTrue = 62,
+    WestFalse = 63,
+    WestTrue = 64,
+    HalfTop = 65,
+    HalfBottom = 66,
+}
 
 internal readonly struct ScarifStructure
 {
@@ -38,6 +111,253 @@ internal readonly struct ScarifStructure
             states[i] = orderedStateIndices[palette[states[i]]];
 
         return (orderedPalette, states);
+    }
+
+    private static void WriteBlockStateProperties(BinaryWriter w, string block, TagNodeCompound props)
+    {
+        foreach (var (key, value) in props)
+        {
+            switch (key)
+            {
+                case "axis":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "x" => SpecialBlockProperties.AxisX,
+                        "y" => SpecialBlockProperties.AxisY,
+                        "z" => SpecialBlockProperties.AxisZ,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "lit":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.LitFalse,
+                        "true" => SpecialBlockProperties.LitTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "level":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "0" => SpecialBlockProperties.Level0,
+                        "1" => SpecialBlockProperties.Level1,
+                        "2" => SpecialBlockProperties.Level2,
+                        "3" => SpecialBlockProperties.Level3,
+                        "4" => SpecialBlockProperties.Level4,
+                        "5" => SpecialBlockProperties.Level5,
+                        "6" => SpecialBlockProperties.Level6,
+                        "7" => SpecialBlockProperties.Level7,
+                        "8" => SpecialBlockProperties.Level8,
+                        "9" => SpecialBlockProperties.Level9,
+                        "10" => SpecialBlockProperties.Level10,
+                        "11" => SpecialBlockProperties.Level11,
+                        "12" => SpecialBlockProperties.Level12,
+                        "13" => SpecialBlockProperties.Level13,
+                        "14" => SpecialBlockProperties.Level14,
+                        "15" => SpecialBlockProperties.Level15,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "power":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "0" => SpecialBlockProperties.Power0,
+                        "1" => SpecialBlockProperties.Power1,
+                        "2" => SpecialBlockProperties.Power2,
+                        "3" => SpecialBlockProperties.Power3,
+                        "4" => SpecialBlockProperties.Power4,
+                        "5" => SpecialBlockProperties.Power5,
+                        "6" => SpecialBlockProperties.Power6,
+                        "7" => SpecialBlockProperties.Power7,
+                        "8" => SpecialBlockProperties.Power8,
+                        "9" => SpecialBlockProperties.Power9,
+                        "10" => SpecialBlockProperties.Power10,
+                        "11" => SpecialBlockProperties.Power11,
+                        "12" => SpecialBlockProperties.Power12,
+                        "13" => SpecialBlockProperties.Power13,
+                        "14" => SpecialBlockProperties.Power14,
+                        "15" => SpecialBlockProperties.Power15,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "half":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "lower" => SpecialBlockProperties.HalfLower,
+                        "upper" => SpecialBlockProperties.HalfUpper,
+                        "top" => SpecialBlockProperties.HalfTop,
+                        "bottom" => SpecialBlockProperties.HalfBottom,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "waterlogged":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.WaterloggedFalse,
+                        "true" => SpecialBlockProperties.WaterloggedTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "facing":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "up" => SpecialBlockProperties.FacingUp,
+                        "down" => SpecialBlockProperties.FacingDown,
+                        "north" => SpecialBlockProperties.FacingNorth,
+                        "south" => SpecialBlockProperties.FacingSouth,
+                        "east" => SpecialBlockProperties.FacingEast,
+                        "west" => SpecialBlockProperties.FacingWest,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "snowy":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.SnowyFalse,
+                        "true" => SpecialBlockProperties.SnowyTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "persistent":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.PersistentFalse,
+                        "true" => SpecialBlockProperties.PersistentTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "up":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.UpFalse,
+                        "true" => SpecialBlockProperties.UpTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "down":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.DownFalse,
+                        "true" => SpecialBlockProperties.DownTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "north":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.NorthFalse,
+                        "true" => SpecialBlockProperties.NorthTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "south":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.SouthFalse,
+                        "true" => SpecialBlockProperties.SouthTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "east":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.EastFalse,
+                        "true" => SpecialBlockProperties.EastTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "west":
+                {
+                    var p = value.ToTagString().Data switch
+                    {
+                        "false" => SpecialBlockProperties.WestFalse,
+                        "true" => SpecialBlockProperties.WestTrue,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    w.Write((byte)p);
+                    break;
+                }
+                case "age":
+                {
+                    w.Write((byte)SpecialBlockProperties.Age);
+                    w.Write(byte.Parse(value.ToTagString().Data));
+                    break;
+                }
+                case "distance":
+                {
+                    w.Write((byte)SpecialBlockProperties.Distance);
+                    w.Write(byte.Parse(value.ToTagString().Data));
+                    break;
+                }
+                default:
+                {
+                    if (value.GetTagType() != TagType.TAG_STRING)
+                        throw new NotSupportedException();
+
+                    w.Write((byte)SpecialBlockProperties.ExtendedProperty);
+                    w.Write(key);
+                    w.Write(value.ToTagString().Data);
+                    break;
+                }
+            }
+        }
     }
 
     public (int NumBlocks, long FileLength, int DictionarySize, int TotalRegionSize, int CompressedRegionSize) Save(string filename)
@@ -91,14 +411,15 @@ internal readonly struct ScarifStructure
                 chunkWriter.Write7BitEncodedInt(palette.Length);
                 foreach (var paletteEntry in palette)
                 {
-                    chunkWriter.Write(paletteEntry.Name);
+                    chunkWriter.Write(paletteEntry.Name.Replace("minecraft:", ""));
                     if (paletteEntry.Properties != null)
-                        chunkWriter.WriteNbt(paletteEntry.Properties);
-                    else
-                        // Leverage the fact that WriteNbt prefixes NBT data with the
-                        // payload length -- write a zero-length payload if there are
-                        // no properties
-                        chunkWriter.Write7BitEncodedInt(0);
+                        WriteBlockStateProperties(chunkWriter, paletteEntry.Name, paletteEntry.Properties);
+                    // chunkWriter.WriteNbt(paletteEntry.Properties);
+                    // else
+                    // Leverage the fact that WriteNbt prefixes NBT data with the
+                    // payload length -- write a zero-length payload if there are
+                    // no properties
+                    chunkWriter.Write7BitEncodedInt(0);
                 }
 
                 // Skip writing state data for sections filled with one block
