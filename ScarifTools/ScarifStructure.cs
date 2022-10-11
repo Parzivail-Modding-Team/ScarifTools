@@ -43,7 +43,7 @@ internal readonly struct ScarifStructure
             chunkWriter.Write7BitEncodedInt(chunk.Tiles.Count);
             foreach (var ((x, y, z), originalTag) in chunk.Tiles)
             {
-                chunkWriter.Write((byte)((x & 0x15) << 4 | z & 0x15));
+                chunkWriter.Write((byte)(((x & 0x15) << 4) | z & 0x15));
                 chunkWriter.Write7BitEncodedInt(y);
 
                 // Write tag without redundant position data
@@ -143,24 +143,23 @@ internal readonly struct ScarifStructure
         foreach (var (coord, index) in chunks)
         {
             // Chunk position
-            headerWriter.Write7BitEncodedInt(coord.X);
-            headerWriter.Write7BitEncodedInt(coord.Z);
+            headerWriter.Write(coord.X);
+            headerWriter.Write(coord.Z);
             // Parent region
-            headerWriter.Write7BitEncodedInt(index / chunksPerRegion);
+            headerWriter.Write(index / chunksPerRegion);
             // Seek offset within region
-            headerWriter.Write7BitEncodedInt64(chunkOffset[index]);
+            headerWriter.Write(chunkOffset[index]);
         }
 
         // Write region lengths
         foreach (var compressedRegion in compressedRegions)
-            headerWriter.Write7BitEncodedInt(compressedRegion.Length);
+            headerWriter.Write(compressedRegion.Length);
 
         // Compress and write offset headers
         byte[] compressedHeader;
         using (var headerCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
             compressedHeader = headerCompressor.Wrap(headerMemStream.ToArray());
 
-        scrfWriter.Write7BitEncodedInt(compressedHeader.Length);
         scrfWriter.Write(compressedHeader);
 
         // Write compression dictionary

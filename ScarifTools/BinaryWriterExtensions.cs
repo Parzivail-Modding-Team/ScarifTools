@@ -11,8 +11,6 @@ internal static class BinaryWriterExtensions
         new NbtTree(tag).WriteTo(ms);
 
         bw.Write((int)ms.Length);
-
-        ms.Seek(0, SeekOrigin.Begin);
-        ms.CopyTo(bw.BaseStream);
+        bw.Write(ms.ToArray());
     }
 }
