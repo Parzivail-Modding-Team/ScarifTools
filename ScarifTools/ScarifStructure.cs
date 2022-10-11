@@ -8,8 +8,6 @@ using ZstdNet;
 
 namespace ScarifTools;
 
-public record struct ChunkData(Coord2 Position, byte[] Data, string DataChecksum);
-
 internal readonly struct ScarifStructure
 {
     private static readonly RecyclableMemoryStreamManager MemoryStreamManager = new();
@@ -21,12 +19,38 @@ internal readonly struct ScarifStructure
         Chunks = chunks;
     }
 
+    private static (BlockState[] Palette, int[] States) SortPaletteByUsage(BlockState[] palette, int[] states)
+    {
+        var histogram = new Dictionary<BlockState, int>();
+        foreach (var state in palette)
+            histogram[state] = 0;
+
+        foreach (var state in states)
+            histogram[palette[state]]++;
+
+        var orderedPalette = histogram.OrderByDescending(pair => pair.Value).Select(pair => pair.Key).ToArray();
+        var orderedStateIndices = new Dictionary<BlockState, int>();
+
+        for (var i = 0; i < orderedPalette.Length; i++)
+            orderedStateIndices[orderedPalette[i]] = i;
+
+        for (var i = 0; i < states.Length; i++)
+            states[i] = orderedStateIndices[palette[states[i]]];
+
+        return (orderedPalette, states);
+    }
+
     public (int NumBlocks, long FileLength, int DictionarySize, int TotalRegionSize, int CompressedRegionSize) Save(string filename)
     {
+        /*
+         * Process chunks and build regions
+         */
+
         var numBlocks = 0;
 
         var chunks = new Dictionary<Coord2, int>();
-        var chunkData = new List<ChunkData>();
+        var chunkData = new List<byte[]>();
+        var chunkChecksums = new Dictionary<string, int>();
 
         // TODO: entities?
 
@@ -59,20 +83,30 @@ internal readonly struct ScarifStructure
             {
                 chunkWriter.Write(section.Y);
 
-                chunkWriter.Write7BitEncodedInt(section.Palette.Length);
-                foreach (var paletteEntry in section.Palette)
+                // Greatly improve compression on sections that have > 127
+                // unique states, generally improve compression otherwise
+                var (palette, states) = SortPaletteByUsage(section.Palette, section.BlockStates);
+
+                // Write section palette
+                chunkWriter.Write7BitEncodedInt(palette.Length);
+                foreach (var paletteEntry in palette)
                 {
                     chunkWriter.Write(paletteEntry.Name);
-                    var hasProperties = paletteEntry.Properties != null;
-
-                    chunkWriter.Write((byte)(hasProperties ? 1 : 0));
-
-                    if (hasProperties)
+                    if (paletteEntry.Properties != null)
                         chunkWriter.WriteNbt(paletteEntry.Properties);
+                    else
+                        // Leverage the fact that WriteNbt prefixes NBT data with the
+                        // payload length -- write a zero-length payload if there are
+                        // no properties
+                        chunkWriter.Write7BitEncodedInt(0);
                 }
 
+                // Skip writing state data for sections filled with one block
+                if (section.Palette.Length < 2)
+                    continue;
+
                 // Section length always 4096 (16^3)
-                foreach (var state in section.BlockStates)
+                foreach (var state in states)
                     chunkWriter.Write7BitEncodedInt(state);
             }
 
@@ -80,22 +114,23 @@ internal readonly struct ScarifStructure
             var checksum = Convert.ToHexString(sha.ComputeHash(array));
 
             // Check for chunks with duplicate data checksums
-            var chunkIdx = chunkData.FindIndex(key => key.DataChecksum == checksum);
-
-            if (chunkIdx < 0)
+            if (chunkChecksums.TryGetValue(checksum, out var chunkIdx))
+            {
+                // If a duplicate is found, use the previous index
+                chunks[coord] = chunkIdx;
+            }
+            else
             {
                 // If a duplicate chunk is NOT found, insert this chunk
-                chunkIdx = chunkData.Count;
-                chunkData.Add(new ChunkData(coord, array, checksum));
+                chunks[coord] = chunkChecksums[checksum] = chunkData.Count;
+                chunkData.Add(array);
             }
-
-            chunks[coord] = chunkIdx;
         }
 
+        // Compile chunks into regions
         const int chunksPerRegion = 16;
         var numRegions = Chunks.Count / chunksPerRegion + 1;
 
-        // Compile chunks into regions
         var regions = new byte[numRegions][];
         var chunkOffset = new long[chunkData.Count];
 
@@ -107,11 +142,15 @@ internal readonly struct ScarifStructure
             for (var j = i * chunksPerRegion; j < chunkData.Count && j < (i + 1) * chunksPerRegion; j++)
             {
                 chunkOffset[j] = ms.Position;
-                ms.Write(chunkData[i].Data);
+                ms.Write(chunkData[i]);
             }
 
             regions[i] = ms.ToArray();
         }
+
+        /*
+         * Compress regions
+         */
 
         // Train compression dictionary
         var dict = DictBuilder.TrainFromBuffer(regions);
@@ -126,6 +165,39 @@ internal readonly struct ScarifStructure
                 .Select(region => regionCompressor.Wrap(region))
                 .ToArray();
 
+        /*
+         * Write and compress offset headers
+         */
+
+        // Write offset headers to temporary buffer for compression
+        using var offsetsMemStream = MemoryStreamManager.GetStream("offsets");
+        var offsetWriter = new BinaryWriter(offsetsMemStream);
+
+        // Write chunk keys and offsets
+        foreach (var (coord, index) in chunks)
+        {
+            // Chunk position
+            offsetWriter.Write(coord.X);
+            offsetWriter.Write(coord.Z);
+            // Parent region
+            offsetWriter.Write(index / chunksPerRegion);
+            // Seek offset within region
+            offsetWriter.Write(chunkOffset[index]);
+        }
+
+        // Write region lengths
+        foreach (var compressedRegion in compressedRegions)
+            offsetWriter.Write(compressedRegion.Length);
+
+        // Compress offset headers
+        byte[] compressedOffsets;
+        using (var headerCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
+            compressedOffsets = headerCompressor.Wrap(offsetsMemStream.ToArray());
+
+        /*
+         * Write data to SCRF file
+         */
+
         using var fs = File.Open(filename, FileMode.Create);
         var scrfWriter = new BinaryWriter(fs);
 
@@ -135,32 +207,7 @@ internal readonly struct ScarifStructure
         scrfWriter.Write(chunks.Count);
         scrfWriter.Write(compressedRegions.Length);
 
-        // Write offset headers to temporary buffer for compression
-        using var headerMemStream = MemoryStreamManager.GetStream("header");
-        var headerWriter = new BinaryWriter(headerMemStream);
-
-        // Write chunk keys and offsets
-        foreach (var (coord, index) in chunks)
-        {
-            // Chunk position
-            headerWriter.Write(coord.X);
-            headerWriter.Write(coord.Z);
-            // Parent region
-            headerWriter.Write(index / chunksPerRegion);
-            // Seek offset within region
-            headerWriter.Write(chunkOffset[index]);
-        }
-
-        // Write region lengths
-        foreach (var compressedRegion in compressedRegions)
-            headerWriter.Write(compressedRegion.Length);
-
-        // Compress and write offset headers
-        byte[] compressedHeader;
-        using (var headerCompressor = new Compressor(new CompressionOptions(CompressionOptions.MaxCompressionLevel)))
-            compressedHeader = headerCompressor.Wrap(headerMemStream.ToArray());
-
-        scrfWriter.Write(compressedHeader);
+        scrfWriter.Write(compressedOffsets);
 
         // Write compression dictionary
         scrfWriter.Write7BitEncodedInt(compressedDict.Length);

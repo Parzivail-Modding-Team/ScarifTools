@@ -10,7 +10,7 @@ internal static class BinaryWriterExtensions
         using var ms = new MemoryStream();
         new NbtTree(tag).WriteTo(ms);
 
-        bw.Write((int)ms.Length);
+        bw.Write7BitEncodedInt((int)ms.Length);
         bw.Write(ms.ToArray());
     }
 }
