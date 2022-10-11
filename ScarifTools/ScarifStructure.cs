@@ -79,6 +79,18 @@ public enum SpecialBlockProperties : byte
     WestTrue = 64,
     HalfTop = 65,
     HalfBottom = 66,
+    NorthNone = 67,
+    NorthLow = 68,
+    NorthTall = 69,
+    SouthNone = 70,
+    SouthLow = 71,
+    SouthTall = 72,
+    EastNone = 73,
+    EastLow = 74,
+    EastTall = 75,
+    WestNone = 76,
+    WestLow = 77,
+    WestTall = 78,
 }
 
 internal readonly struct ScarifStructure
@@ -292,6 +304,9 @@ internal readonly struct ScarifStructure
                     {
                         "false" => SpecialBlockProperties.NorthFalse,
                         "true" => SpecialBlockProperties.NorthTrue,
+                        "none" => SpecialBlockProperties.NorthNone,
+                        "low" => SpecialBlockProperties.NorthLow,
+                        "tall" => SpecialBlockProperties.NorthTall,
                         _ => throw new NotSupportedException()
                     };
 
@@ -304,6 +319,9 @@ internal readonly struct ScarifStructure
                     {
                         "false" => SpecialBlockProperties.SouthFalse,
                         "true" => SpecialBlockProperties.SouthTrue,
+                        "none" => SpecialBlockProperties.SouthNone,
+                        "low" => SpecialBlockProperties.SouthLow,
+                        "tall" => SpecialBlockProperties.SouthTall,
                         _ => throw new NotSupportedException()
                     };
 
@@ -316,6 +334,9 @@ internal readonly struct ScarifStructure
                     {
                         "false" => SpecialBlockProperties.EastFalse,
                         "true" => SpecialBlockProperties.EastTrue,
+                        "none" => SpecialBlockProperties.EastNone,
+                        "low" => SpecialBlockProperties.EastLow,
+                        "tall" => SpecialBlockProperties.EastTall,
                         _ => throw new NotSupportedException()
                     };
 
@@ -328,6 +349,9 @@ internal readonly struct ScarifStructure
                     {
                         "false" => SpecialBlockProperties.WestFalse,
                         "true" => SpecialBlockProperties.WestTrue,
+                        "none" => SpecialBlockProperties.WestNone,
+                        "low" => SpecialBlockProperties.WestLow,
+                        "tall" => SpecialBlockProperties.WestTall,
                         _ => throw new NotSupportedException()
                     };
 
