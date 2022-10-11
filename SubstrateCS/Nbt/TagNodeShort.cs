@@ -5,8 +5,6 @@
 /// </summary>
 public sealed class TagNodeShort : TagNode
 {
-    private short _data = 0;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -22,7 +20,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>An int node representing the same data.</returns>
     public override TagNodeInt ToTagInt()
     {
-        return new TagNodeInt(_data);
+        return new TagNodeInt(Data);
     }
 
     /// <summary>
@@ -31,7 +29,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A long node representing the same data.</returns>
     public override TagNodeLong ToTagLong()
     {
-        return new TagNodeLong(_data);
+        return new TagNodeLong(Data);
     }
 
     /// <summary>
@@ -40,7 +38,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A float node representing the same data.</returns>
     public override TagNodeFloat ToTagFloat()
     {
-        return new TagNodeFloat(_data);
+        return new TagNodeFloat(Data);
     }
 
     /// <summary>
@@ -49,7 +47,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A double node representing the same data.</returns>
     public override TagNodeDouble ToTagDouble()
     {
-        return new TagNodeDouble(_data);
+        return new TagNodeDouble(Data);
     }
 
     /// <summary>
@@ -78,11 +76,7 @@ public sealed class TagNodeShort : TagNode
     /// <summary>
     /// Gets or sets a short of tag data.
     /// </summary>
-    public short Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public short Data { get; set; }
 
     /// <summary>
     /// Constructs a new short node with a data value of 0.
@@ -97,7 +91,7 @@ public sealed class TagNodeShort : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeShort(short d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -106,7 +100,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A new short node representing the same data.</returns>
     public override TagNode Copy()
     {
-        return new TagNodeShort(_data);
+        return new TagNodeShort(Data);
     }
 
     /// <summary>
@@ -115,7 +109,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -145,7 +139,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A system short set to the node's data value.</returns>
     public static implicit operator short(TagNodeShort s)
     {
-        return s._data;
+        return s.Data;
     }
 
     /// <summary>
@@ -155,7 +149,7 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A system int set to the node's data value.</returns>
     public static implicit operator int(TagNodeShort s)
     {
-        return s._data;
+        return s.Data;
     }
 
     /// <summary>
@@ -165,6 +159,6 @@ public sealed class TagNodeShort : TagNode
     /// <returns>A system long set to the node's data value.</returns>
     public static implicit operator long(TagNodeShort s)
     {
-        return s._data;
+        return s.Data;
     }
 }

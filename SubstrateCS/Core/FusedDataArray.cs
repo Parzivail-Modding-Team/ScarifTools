@@ -25,7 +25,7 @@ public class FusedDataArray3 : IDataArray3
 
     public int this[int x, int y, int z]
     {
-        get { return (_array0[x, y, z] << _array1.DataWidth) + _array1[x, y, z]; }
+        get => (_array0[x, y, z] << _array1.DataWidth) + _array1[x, y, z];
         set
         {
             _array0[x, y, z] = value >> _array1.DataWidth;
@@ -33,20 +33,11 @@ public class FusedDataArray3 : IDataArray3
         }
     }
 
-    public int XDim
-    {
-        get { return _array1.XDim; }
-    }
+    public int XDim => _array1.XDim;
 
-    public int YDim
-    {
-        get { return _array1.YDim; }
-    }
+    public int YDim => _array1.YDim;
 
-    public int ZDim
-    {
-        get { return _array1.ZDim; }
-    }
+    public int ZDim => _array1.ZDim;
 
     public int GetIndex(int x, int y, int z)
     {
@@ -60,7 +51,7 @@ public class FusedDataArray3 : IDataArray3
 
     public int this[int i]
     {
-        get { return (_array0[i] << _array1.DataWidth) + _array1[i]; }
+        get => (_array0[i] << _array1.DataWidth) + _array1[i];
         set
         {
             _array0[i] = value >> _array1.DataWidth;
@@ -68,15 +59,9 @@ public class FusedDataArray3 : IDataArray3
         }
     }
 
-    public int Length
-    {
-        get { return _array1.Length; }
-    }
+    public int Length => _array1.Length;
 
-    public int DataWidth
-    {
-        get { return _array0.DataWidth + _array1.DataWidth; }
-    }
+    public int DataWidth => _array0.DataWidth + _array1.DataWidth;
 
     public void Clear()
     {

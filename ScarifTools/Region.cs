@@ -9,12 +9,12 @@ namespace ScarifTools;
 
 public record Region(Coord2 Pos, Dictionary<Coord2, Chunk> Chunks)
 {
-    public Chunk GetChunk(Coord2 chunkPos)
+    public Chunk? GetChunk(Coord2 chunkPos)
     {
         return Chunks.GetValueOrDefault(chunkPos);
     }
 
-    public BlockState GetBlock(Coord3 blockPos)
+    public BlockState? GetBlock(Coord3 blockPos)
     {
         var chunk = GetChunk((blockPos >> 4).Flatten());
         return chunk?.GetBlock(blockPos);

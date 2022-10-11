@@ -2,7 +2,7 @@
 
 namespace ScarifTools;
 
-public record BlockState(string Name, TagNodeCompound Properties)
+public record BlockState(string Name, TagNodeCompound? Properties)
 {
     public static BlockState Load(TagNodeCompound tag)
     {

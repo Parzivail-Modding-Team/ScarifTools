@@ -4,20 +4,14 @@ using System.Collections.Generic;
 
 namespace Substrate.Core;
 
-internal class IndexedLinkedList<T> : ICollection<T>, ICollection
+internal class IndexedLinkedList<T> : ICollection<T>, ICollection where T : notnull
 {
     private LinkedList<T> _list;
     private Dictionary<T, LinkedListNode<T>> _index;
 
-    public T First
-    {
-        get { return _list.First.Value; }
-    }
+    public T First => _list.First!.Value;
 
-    public T Last
-    {
-        get { return _list.Last.Value; }
-    }
+    public T Last => _list.Last!.Value;
 
     public IndexedLinkedList()
     {
@@ -39,13 +33,13 @@ internal class IndexedLinkedList<T> : ICollection<T>, ICollection
 
     public void RemoveFirst()
     {
-        _index.Remove(_list.First.Value);
+        _index.Remove(_list.First!.Value);
         _list.RemoveFirst();
     }
 
     public void RemoveLast()
     {
-        _index.Remove(_list.First.Value);
+        _index.Remove(_list.First!.Value);
         _list.RemoveLast();
     }
 
@@ -72,15 +66,11 @@ internal class IndexedLinkedList<T> : ICollection<T>, ICollection
         _list.CopyTo(array, arrayIndex);
     }
 
-    public bool IsReadOnly
-    {
-        get { return false; }
-    }
+    public bool IsReadOnly => false;
 
     public bool Remove(T value)
     {
-        LinkedListNode<T> node;
-        if (_index.TryGetValue(value, out node))
+        if (_index.TryGetValue(value, out var node))
         {
             _index.Remove(value);
             _list.Remove(node);

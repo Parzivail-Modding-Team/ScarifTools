@@ -5,8 +5,6 @@
 /// </summary>
 public sealed class TagNodeByte : TagNode
 {
-    private byte _data = 0;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -22,7 +20,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A short node representing the same data.</returns>
     public override TagNodeShort ToTagShort()
     {
-        return new TagNodeShort(_data);
+        return new TagNodeShort(Data);
     }
 
     /// <summary>
@@ -31,7 +29,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>An int node representing the same data.</returns>
     public override TagNodeInt ToTagInt()
     {
-        return new TagNodeInt(_data);
+        return new TagNodeInt(Data);
     }
 
     /// <summary>
@@ -40,7 +38,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A long node representing the same data.</returns>
     public override TagNodeLong ToTagLong()
     {
-        return new TagNodeLong(_data);
+        return new TagNodeLong(Data);
     }
 
     /// <summary>
@@ -59,20 +57,13 @@ public sealed class TagNodeByte : TagNode
     /// <returns>Status indicating whether this object could be cast to a node type represented by the given tag type.</returns>
     public override bool IsCastableTo(TagType type)
     {
-        return (type == TagType.TAG_BYTE ||
-                type == TagType.TAG_SHORT ||
-                type == TagType.TAG_INT ||
-                type == TagType.TAG_LONG);
+        return type is TagType.TAG_BYTE or TagType.TAG_SHORT or TagType.TAG_INT or TagType.TAG_LONG;
     }
 
     /// <summary>
     /// Gets or sets a byte of tag data.
     /// </summary>
-    public byte Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public byte Data { get; set; }
 
     /// <summary>
     /// Constructs a new byte node with a data value of 0.
@@ -87,7 +78,7 @@ public sealed class TagNodeByte : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeByte(byte d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -96,7 +87,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A new byte node representing the same data.</returns>
     public override TagNode Copy()
     {
-        return new TagNodeByte(_data);
+        return new TagNodeByte(Data);
     }
 
     /// <summary>
@@ -105,7 +96,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -125,7 +116,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A system byte set to the node's data value.</returns>
     public static implicit operator byte(TagNodeByte b)
     {
-        return b._data;
+        return b.Data;
     }
 
     /// <summary>
@@ -135,7 +126,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A system short set to the node's data value.</returns>
     public static implicit operator short(TagNodeByte b)
     {
-        return b._data;
+        return b.Data;
     }
 
     /// <summary>
@@ -145,7 +136,7 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A system int set to the node's data value.</returns>
     public static implicit operator int(TagNodeByte b)
     {
-        return b._data;
+        return b.Data;
     }
 
     /// <summary>
@@ -155,6 +146,6 @@ public sealed class TagNodeByte : TagNode
     /// <returns>A system long set to the node's data value.</returns>
     public static implicit operator long(TagNodeByte b)
     {
-        return b._data;
+        return b.Data;
     }
 }

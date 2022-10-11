@@ -12,9 +12,7 @@ namespace Substrate.Nbt;
 /// </remarks>
 public sealed class TagNodeList : TagNode, IList<TagNode>
 {
-    private TagType _type = TagType.TAG_END;
-
-    private List<TagNode> _items = null;
+    private readonly List<TagNode> _items;
 
     /// <summary>
     /// Converts the node to itself.
@@ -37,18 +35,12 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <summary>
     /// Gets the number of subnodes contained in the list.
     /// </summary>
-    public int Count
-    {
-        get { return _items.Count; }
-    }
+    public int Count => _items.Count;
 
     /// <summary>
     /// Gets the tag type of the subnodes contained in the list.
     /// </summary>
-    public TagType ValueType
-    {
-        get { return _type; }
-    }
+    public TagType ValueType { get; private set; }
 
     /// <summary>
     /// Constructs a new empty list node.
@@ -56,7 +48,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <param name="type">The tag type of the list's subnodes.</param>
     public TagNodeList(TagType type)
     {
-        _type = type;
+        ValueType = type;
         _items = new List<TagNode>();
     }
 
@@ -67,7 +59,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <param name="items">A list containing node objects matching the type parameter.</param>
     public TagNodeList(TagType type, List<TagNode> items)
     {
-        _type = type;
+        ValueType = type;
         _items = items;
     }
 
@@ -77,7 +69,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <returns>A new list node containing new subnodes representing the same data.</returns>
     public override TagNode Copy()
     {
-        var list = new TagNodeList(_type);
+        var list = new TagNodeList(ValueType);
         foreach (var item in _items)
         {
             list.Add(item.Copy());
@@ -91,7 +83,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// </summary>
     /// <param name="match">The <see cref="Predicate{TagNode}"/> delegate that defines the conditions of the subnode to search for.</param>
     /// <returns>The first subnode matching the predicate.</returns>
-    public TagNode Find(Predicate<TagNode> match)
+    public TagNode? Find(Predicate<TagNode> match)
     {
         return _items.Find(match);
     }
@@ -149,7 +141,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// Gets a string representation of the node's data.
     /// </summary>
     /// <returns>String representation of the node's data.</returns>
-    public override string ToString()
+    public override string? ToString()
     {
         return _items.ToString();
     }
@@ -160,11 +152,11 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <param name="type">The new tag type to store in the list.</param>
     public void ChangeValueType(TagType type)
     {
-        if (type == _type)
+        if (type == ValueType)
             return;
 
         _items.Clear();
-        _type = type;
+        ValueType = type;
     }
 
     #region IList<NBT_Value> Members
@@ -187,7 +179,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <exception cref="ArgumentException">Thrown when a subnode being inserted has the wrong tag type.</exception>
     public void Insert(int index, TagNode item)
     {
-        if (item.GetTagType() != _type)
+        if (item.GetTagType() != ValueType)
         {
             throw new ArgumentException("The tag type of item is invalid for this node");
         }
@@ -212,10 +204,10 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <exception cref="ArgumentException">Thrown when a subnode being assigned has the wrong tag type.</exception>
     public TagNode this[int index]
     {
-        get { return _items[index]; }
+        get => _items[index];
         set
         {
-            if (value.GetTagType() != _type)
+            if (value.GetTagType() != ValueType)
             {
                 throw new ArgumentException("The tag type of the assigned subnode is invalid for this node");
             }
@@ -235,7 +227,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <exception cref="ArgumentException">Thrown when a subnode being added has the wrong tag type.</exception>
     public void Add(TagNode item)
     {
-        if (item.GetTagType() != _type)
+        if (item.GetTagType() != ValueType)
         {
             throw new ArgumentException("The tag type of item is invalid for this node");
         }
@@ -274,10 +266,7 @@ public sealed class TagNodeList : TagNode, IList<TagNode>
     /// <summary>
     /// Gets a value indicating whether the node is readonly.
     /// </summary>
-    public bool IsReadOnly
-    {
-        get { return false; }
-    }
+    public bool IsReadOnly => false;
 
     /// <summary>
     /// Removes the first occurance of a subnode from the node's list.

@@ -5,8 +5,6 @@
 /// </summary>
 public sealed class TagNodeFloat : TagNode
 {
-    private float _data = 0;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -22,7 +20,7 @@ public sealed class TagNodeFloat : TagNode
     /// <returns>A double node representing the same data.</returns>
     public override TagNodeDouble ToTagDouble()
     {
-        return new TagNodeDouble(_data);
+        return new TagNodeDouble(Data);
     }
 
     /// <summary>
@@ -48,11 +46,7 @@ public sealed class TagNodeFloat : TagNode
     /// <summary>
     /// Gets or sets a float of tag data.
     /// </summary>
-    public float Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public float Data { get; set; }
 
     /// <summary>
     /// Constructs a new float node with a data value of 0.0.
@@ -67,7 +61,7 @@ public sealed class TagNodeFloat : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeFloat(float d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -76,7 +70,7 @@ public sealed class TagNodeFloat : TagNode
     /// <returns>A new float node representing the same data.</returns>
     public override TagNode Copy()
     {
-        return new TagNodeFloat(_data);
+        return new TagNodeFloat(Data);
     }
 
     /// <summary>
@@ -85,7 +79,7 @@ public sealed class TagNodeFloat : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -105,7 +99,7 @@ public sealed class TagNodeFloat : TagNode
     /// <returns>A system float set to the node's data value.</returns>
     public static implicit operator float(TagNodeFloat f)
     {
-        return f._data;
+        return f.Data;
     }
 
     /// <summary>
@@ -115,6 +109,6 @@ public sealed class TagNodeFloat : TagNode
     /// <returns>A system double set to the node's data value.</returns>
     public static implicit operator double(TagNodeFloat f)
     {
-        return f._data;
+        return f.Data;
     }
 }

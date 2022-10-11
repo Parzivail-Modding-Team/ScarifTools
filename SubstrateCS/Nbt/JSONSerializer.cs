@@ -6,12 +6,7 @@ namespace Substrate.Nbt;
 
 public class JSONSerializer
 {
-    public static string Serialize(TagNode tag)
-    {
-        return Serialize(tag, 0);
-    }
-
-    public static string Serialize(TagNode tag, int level)
+    public static string Serialize(TagNode tag, int level = 0)
     {
         var str = new StringBuilder();
 
@@ -50,9 +45,8 @@ public class JSONSerializer
         str.AppendLine();
         AddLine(str, "{", level);
 
-        var en = tag.GetEnumerator();
         var first = true;
-        while (en.MoveNext())
+        foreach (var item in tag)
         {
             if (!first)
             {
@@ -60,7 +54,6 @@ public class JSONSerializer
                 str.AppendLine();
             }
 
-            var item = en.Current;
             Add(str, "\"" + item.Key + "\": ", level + 1);
 
             if (item.Value.GetTagType() == TagType.TAG_COMPOUND)
@@ -102,16 +95,13 @@ public class JSONSerializer
         str.AppendLine();
         AddLine(str, "[", level);
 
-        var en = tag.GetEnumerator();
         var first = true;
-        while (en.MoveNext())
+        foreach (var item in tag)
         {
             if (!first)
             {
                 str.Append(",");
             }
-
-            var item = en.Current;
 
             if (item.GetTagType() == TagType.TAG_COMPOUND)
             {
@@ -265,7 +255,7 @@ public class JSONSerializer
         }
     }
 
-    private static string Escape(String str)
+    private static string Escape(string str)
     {
         var builder = new StringBuilder();
         foreach (var ch in str)

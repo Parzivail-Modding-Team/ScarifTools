@@ -15,35 +15,28 @@ namespace Substrate.Nbt;
 /// </remarks>
 public class NbtTree : ICopyable<NbtTree>
 {
-    private Stream _stream = null;
-    private TagNodeCompound _root = null;
-    private string _rootName = "";
+    #nullable disable
+    private Stream _stream;
+    #nullable enable
 
     private static TagNodeNull _nulltag = new TagNodeNull();
 
     /// <summary>
     /// Gets the root node of this tree.
     /// </summary>
-    public TagNodeCompound Root
-    {
-        get { return _root; }
-    }
+    public TagNodeCompound Root { get; private set; }
 
     /// <summary>
     /// Gets or sets the name of the tree's root node.
     /// </summary>
-    public string Name
-    {
-        get { return _rootName; }
-        set { _rootName = value; }
-    }
+    public string Name { get; set; } = "";
 
     /// <summary>
     /// Constructs a wrapper around a new NBT tree with an empty root node.
     /// </summary>
     public NbtTree()
     {
-        _root = new TagNodeCompound();
+        Root = new TagNodeCompound();
     }
 
     /// <summary>
@@ -52,7 +45,7 @@ public class NbtTree : ICopyable<NbtTree>
     /// <param name="tree">The root node of an NBT tree.</param>
     public NbtTree(TagNodeCompound tree)
     {
-        _root = tree;
+        Root = tree;
     }
 
     /// <summary>
@@ -62,8 +55,8 @@ public class NbtTree : ICopyable<NbtTree>
     /// <param name="name">The name for the root node.</param>
     public NbtTree(TagNodeCompound tree, string name)
     {
-        _root = tree;
-        _rootName = name;
+        Root = tree;
+        Name = name;
     }
 
     /// <summary>
@@ -72,19 +65,22 @@ public class NbtTree : ICopyable<NbtTree>
     /// <param name="s">An open, readable data stream containing NBT data.</param>
     public NbtTree(Stream s)
     {
-        ReadFrom(s);
+        Root = ReadFrom(s);
     }
 
     /// <summary>
     /// Rebuild the internal NBT tree from a source data stream.
     /// </summary>
     /// <param name="s">An open, readable data stream containing NBT data.</param>
-    public void ReadFrom(Stream s)
+    public TagNodeCompound ReadFrom(Stream s)
     {
-        if (s != null)
+        _stream = s;
+        try
         {
-            _stream = s;
-            _root = ReadRoot();
+            return ReadRoot();
+        }
+        finally
+        {
             _stream = null;
         }
     }
@@ -95,17 +91,11 @@ public class NbtTree : ICopyable<NbtTree>
     /// <param name="s">An open, writable data stream.</param>
     public void WriteTo(Stream s)
     {
-        if (s != null)
-        {
-            _stream = s;
+        _stream = s;
 
-            if (_root != null)
-            {
-                WriteTag(_rootName, _root);
-            }
+        WriteTag(Name, Root);
 
-            _stream = null;
-        }
+        _stream = null;
     }
 
     private TagNode ReadValue(TagType type)
@@ -113,7 +103,7 @@ public class NbtTree : ICopyable<NbtTree>
         switch (type)
         {
             case TagType.TAG_END:
-                return null;
+                return null!;
 
             case TagType.TAG_BYTE:
                 return ReadByte();
@@ -446,17 +436,19 @@ public class NbtTree : ICopyable<NbtTree>
         return val;
     }
 
+    #nullable disable
     private TagNodeCompound ReadRoot()
     {
         var type = (TagType)_stream.ReadByte();
         if (type == TagType.TAG_COMPOUND)
         {
-            _rootName = ReadString().ToTagString().Data; // name
+            Name = ReadString().ToTagString().Data; // name
             return ReadValue(type) as TagNodeCompound;
         }
 
         return null;
     }
+    #nullable enable
 
     private bool ReadTag(TagNodeCompound parent)
     {
@@ -733,7 +725,7 @@ public class NbtTree : ICopyable<NbtTree>
         _stream.Write(data, 0, data.Length);
     }
 
-    private void WriteTag(string name, TagNode val)
+    private void WriteTag(string? name, TagNode val)
     {
         _stream.WriteByte((byte)val.GetTagType());
 
@@ -752,8 +744,9 @@ public class NbtTree : ICopyable<NbtTree>
     /// <returns>A new NBT_tree.</returns>
     public NbtTree Copy()
     {
-        var tree = new NbtTree();
-        tree._root = _root.Copy() as TagNodeCompound;
+        var tree = new NbtTree {
+            Root = Root.Copy()
+        };
 
         return tree;
     }
@@ -764,20 +757,20 @@ public class NbtTree : ICopyable<NbtTree>
 // TODO: Revise exceptions?
 public class NBTException : Exception
 {
-    public const String MSG_GZIP_ENDOFSTREAM = "Gzip Error: Unexpected end of stream";
+    public const string MSG_GZIP_ENDOFSTREAM = "Gzip Error: Unexpected end of stream";
 
-    public const String MSG_READ_NEG = "Read Error: Negative length";
-    public const String MSG_READ_TYPE = "Read Error: Invalid value type";
+    public const string MSG_READ_NEG = "Read Error: Negative length";
+    public const string MSG_READ_TYPE = "Read Error: Invalid value type";
 
     public NBTException()
     {
     }
 
-    public NBTException(String msg) : base(msg)
+    public NBTException(string msg) : base(msg)
     {
     }
 
-    public NBTException(String msg, Exception innerException) : base(msg, innerException)
+    public NBTException(string msg, Exception innerException) : base(msg, innerException)
     {
     }
 }

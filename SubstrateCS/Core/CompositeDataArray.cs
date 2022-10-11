@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Substrate.Core;
 
@@ -8,17 +9,17 @@ public class CompositeDataArray3 : IDataArray3
 
     public CompositeDataArray3(IDataArray3[] sections)
     {
-        for (var i = 0; i < sections.Length; i++)
-            if (sections[i] == null)
-                throw new ArgumentException("sections argument cannot have null entries.");
-
-        for (var i = 0; i < sections.Length; i++)
+        if (sections.Any(section => section == null))
         {
-            if (sections[i].Length != sections[0].Length
-                || sections[i].XDim != sections[0].XDim
-                || sections[i].YDim != sections[0].YDim
-                || sections[i].ZDim != sections[0].ZDim)
-                throw new ArgumentException("All elements in sections argument must have same metrics.");
+            throw new ArgumentException("sections argument cannot have null entries.");
+        }
+
+        if (sections.Any(section => section!.Length != sections[0]!.Length
+                                    || section.XDim != sections[0].XDim
+                                    || section.YDim != sections[0].YDim
+                                    || section.ZDim != sections[0].ZDim))
+        {
+            throw new ArgumentException("All elements in sections argument must have same metrics.");
         }
 
         _sections = sections;
@@ -43,20 +44,11 @@ public class CompositeDataArray3 : IDataArray3
         }
     }
 
-    public int XDim
-    {
-        get { return _sections[0].XDim; }
-    }
+    public int XDim => _sections[0].XDim;
 
-    public int YDim
-    {
-        get { return _sections[0].YDim * _sections.Length; }
-    }
+    public int YDim => _sections[0].YDim * _sections.Length;
 
-    public int ZDim
-    {
-        get { return _sections[0].ZDim; }
-    }
+    public int ZDim => _sections[0].ZDim;
 
     public int GetIndex(int x, int y, int z)
     {
@@ -93,20 +85,14 @@ public class CompositeDataArray3 : IDataArray3
         }
     }
 
-    public int Length
-    {
-        get { return _sections[0].Length * _sections.Length; }
-    }
+    public int Length => _sections[0].Length * _sections.Length;
 
-    public int DataWidth
-    {
-        get { return _sections[0].DataWidth; }
-    }
+    public int DataWidth => _sections[0].DataWidth;
 
     public void Clear()
     {
-        for (var i = 0; i < _sections.Length; i++)
-            _sections[i].Clear();
+        foreach (var section in _sections)
+            section.Clear();
     }
 
     #endregion

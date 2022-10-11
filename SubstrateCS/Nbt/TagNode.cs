@@ -157,8 +157,5 @@ public abstract class TagNode : ICopyable<TagNode>
     /// Makes a deep copy of the NBT node.
     /// </summary>
     /// <returns>A new NBT node.</returns>
-    public virtual TagNode Copy()
-    {
-        return null;
-    }
+    public abstract TagNode Copy();
 }

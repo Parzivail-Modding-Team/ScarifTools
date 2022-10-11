@@ -38,7 +38,7 @@ public class ChunkSection
 
         var longIdx = 0;
         var bitIdx = 0;
-        BitArray bArr = null;
+        BitArray? bArr = null;
 
         for (var i = 0; i < BlockStates.Length; i++)
         {
@@ -49,7 +49,7 @@ public class ChunkSection
                 bitIdx = 0;
             }
 
-            BlockStates[i] = TakeBits(bArr, bitIdx, bitWidth);
+            BlockStates[i] = TakeBits(bArr!, bitIdx, bitWidth);
             bitIdx += bitWidth;
         }
     }
@@ -83,7 +83,7 @@ public class ChunkSection
         return pos.Y * 256 + pos.Z * 16 + pos.X;
     }
 
-    public static ChunkSection Load(int dataVersion, Coord2 pos, TagNodeCompound tag)
+    public static ChunkSection? Load(int dataVersion, Coord2 pos, TagNodeCompound tag)
     {
         var y = tag["Y"].ToTagByte().Data;
         var blockStatesTag = tag["block_states"].ToTagCompound();
@@ -104,7 +104,7 @@ public class ChunkSection
     }
 
     /// <inheritdoc />
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
@@ -118,12 +118,12 @@ public class ChunkSection
         return HashCode.Combine(Pos, Y);
     }
 
-    public static bool operator ==(ChunkSection left, ChunkSection right)
+    public static bool operator ==(ChunkSection? left, ChunkSection? right)
     {
         return Equals(left, right);
     }
 
-    public static bool operator !=(ChunkSection left, ChunkSection right)
+    public static bool operator !=(ChunkSection? left, ChunkSection? right)
     {
         return !Equals(left, right);
     }

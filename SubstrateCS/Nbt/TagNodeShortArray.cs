@@ -2,8 +2,6 @@
 
 public sealed class TagNodeShortArray : TagNode
 {
-    private short[] _data = null;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -25,19 +23,12 @@ public sealed class TagNodeShortArray : TagNode
     /// <summary>
     /// Gets or sets an short array of tag data.
     /// </summary>
-    public short[] Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public short[] Data { get; set; }
 
     /// <summary>
     /// Gets the length of the stored short array.
     /// </summary>
-    public int Length
-    {
-        get { return _data.Length; }
-    }
+    public int Length => Data.Length;
 
     /// <summary>
     /// Constructs a new short array node with a null data value.
@@ -52,7 +43,7 @@ public sealed class TagNodeShortArray : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeShortArray(short[] d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -61,8 +52,8 @@ public sealed class TagNodeShortArray : TagNode
     /// <returns>A new int array node representing the same data.</returns>
     public override TagNode Copy()
     {
-        var arr = new short[_data.Length];
-        _data.CopyTo(arr, 0);
+        var arr = new short[Data.Length];
+        Data.CopyTo(arr, 0);
 
         return new TagNodeShortArray(arr);
     }
@@ -73,7 +64,7 @@ public sealed class TagNodeShortArray : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -83,8 +74,8 @@ public sealed class TagNodeShortArray : TagNode
     /// <returns>The short value at the given index of the stored short array.</returns>
     public short this[int index]
     {
-        get { return _data[index]; }
-        set { _data[index] = value; }
+        get { return Data[index]; }
+        set { Data[index] = value; }
     }
 
     /// <summary>
@@ -104,6 +95,6 @@ public sealed class TagNodeShortArray : TagNode
     /// <returns>A system short array set to the node's data.</returns>
     public static implicit operator short[](TagNodeShortArray i)
     {
-        return i._data;
+        return i.Data;
     }
 }

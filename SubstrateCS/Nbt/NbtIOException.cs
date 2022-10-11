@@ -23,7 +23,7 @@ public class NbtIOException : Exception
     /// Initializes a new instance of the <see cref="NbtIOException"/> class with a custom error message.
     /// </summary>
     /// <param name="message">A custom error message.</param>
-    public NbtIOException(string message)
+    public NbtIOException(string? message)
         : base(message)
     {
     }
@@ -34,7 +34,7 @@ public class NbtIOException : Exception
     /// </summary>
     /// <param name="message">A custom error message.</param>
     /// <param name="innerException">A reference to the original exception that caused the error.</param>
-    public NbtIOException(string message, Exception innerException)
+    public NbtIOException(string? message, Exception? innerException)
         : base(message, innerException)
     {
     }

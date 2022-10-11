@@ -40,7 +40,7 @@ internal static class Base36
     {
         if (input.Length == 0)
         {
-            throw new ArgumentOutOfRangeException("input", input);
+            throw new ArgumentOutOfRangeException(nameof(input), input);
         }
 
         var neg = false;

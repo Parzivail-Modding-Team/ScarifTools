@@ -2,8 +2,6 @@
 
 public sealed class TagNodeIntArray : TagNode
 {
-    private int[] _data = null;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -25,26 +23,12 @@ public sealed class TagNodeIntArray : TagNode
     /// <summary>
     /// Gets or sets an int array of tag data.
     /// </summary>
-    public int[] Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public int[] Data { get; set; }
 
     /// <summary>
     /// Gets the length of the stored byte array.
     /// </summary>
-    public int Length
-    {
-        get { return _data.Length; }
-    }
-
-    /// <summary>
-    /// Constructs a new byte array node with a null data value.
-    /// </summary>
-    public TagNodeIntArray()
-    {
-    }
+    public int Length => Data.Length;
 
     /// <summary>
     /// Constructs a new byte array node.
@@ -52,7 +36,7 @@ public sealed class TagNodeIntArray : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeIntArray(int[] d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -61,8 +45,8 @@ public sealed class TagNodeIntArray : TagNode
     /// <returns>A new int array node representing the same data.</returns>
     public override TagNode Copy()
     {
-        var arr = new int[_data.Length];
-        _data.CopyTo(arr, 0);
+        var arr = new int[Data.Length];
+        Data.CopyTo(arr, 0);
 
         return new TagNodeIntArray(arr);
     }
@@ -71,9 +55,9 @@ public sealed class TagNodeIntArray : TagNode
     /// Gets a string representation of the node's data.
     /// </summary>
     /// <returns>String representation of the node's data.</returns>
-    public override string ToString()
+    public override string? ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -83,8 +67,8 @@ public sealed class TagNodeIntArray : TagNode
     /// <returns>The int value at the given index of the stored byte array.</returns>
     public int this[int index]
     {
-        get { return _data[index]; }
-        set { _data[index] = value; }
+        get => Data[index];
+        set => Data[index] = value;
     }
 
     /// <summary>
@@ -104,6 +88,6 @@ public sealed class TagNodeIntArray : TagNode
     /// <returns>A system int array set to the node's data.</returns>
     public static implicit operator int[](TagNodeIntArray i)
     {
-        return i._data;
+        return i.Data;
     }
 }

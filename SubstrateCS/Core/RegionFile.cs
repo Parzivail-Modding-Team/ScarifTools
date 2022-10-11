@@ -21,7 +21,9 @@ public class RegionFile : IDisposable
     private static byte[] emptySector = new byte[4096];
 
     protected string fileName;
+    #nullable disable
     private FileStream file;
+    #nullable enable
 
     /// <summary>
     /// The file lock used so that we do not seek in different areas
@@ -33,7 +35,9 @@ public class RegionFile : IDisposable
 
     private int[] offsets;
     private int[] chunkTimestamps;
-    private List<Boolean> sectorFree;
+    #nullable disable
+    private List<bool> sectorFree;
+    #nullable enable
     private int sizeDelta;
     private long lastModified = 0;
 
@@ -156,7 +160,7 @@ public class RegionFile : IDisposable
 
                 /* set up the available sector map */
                 var nSectors = (int)file.Length / SectorBytes;
-                sectorFree = new List<Boolean>(nSectors);
+                sectorFree = new List<bool>(nSectors);
 
                 for (var i = 0; i < nSectors; ++i)
                 {
@@ -227,27 +231,27 @@ public class RegionFile : IDisposable
     }
 
     // various small debug printing helpers
-    private void Debug(String str)
+    private void Debug(string str)
     {
         //        System.Consle.Write(str);
     }
 
-    private void Debugln(String str)
+    private void Debugln(string str)
     {
         Debug(str + "\n");
     }
 
-    private void Debug(String mode, int x, int z, String str)
+    private void Debug(string mode, int x, int z, string str)
     {
         Debug("REGION " + mode + " " + fileName + "[" + x + "," + z + "] = " + str);
     }
 
-    private void Debug(String mode, int x, int z, int count, String str)
+    private void Debug(string mode, int x, int z, int count, string str)
     {
         Debug("REGION " + mode + " " + fileName + "[" + x + "," + z + "] " + count + "B = " + str);
     }
 
-    private void Debugln(String mode, int x, int z, String str)
+    private void Debugln(string mode, int x, int z, string str)
     {
         Debug(mode, x, z, str + "\n");
     }
@@ -256,7 +260,7 @@ public class RegionFile : IDisposable
      * gets an (uncompressed) stream representing the chunk data returns null if
      * the chunk is not found or an error occurs
      */
-    public Stream GetChunkDataInputStream(int x, int z)
+    public Stream? GetChunkDataInputStream(int x, int z)
     {
         if (_disposed)
         {
@@ -344,14 +348,14 @@ public class RegionFile : IDisposable
         }
     }
 
-    public Stream GetChunkDataOutputStream(int x, int z)
+    public Stream? GetChunkDataOutputStream(int x, int z)
     {
         if (OutOfBounds(x, z)) return null;
 
         return new ZLibStream(new ChunkBuffer(this, x, z), CompressionMode.Compress);
     }
 
-    public Stream GetChunkDataOutputStream(int x, int z, int timestamp)
+    public Stream? GetChunkDataOutputStream(int x, int z, int timestamp)
     {
         if (OutOfBounds(x, z)) return null;
 
@@ -575,7 +579,6 @@ public class RegionFile : IDisposable
             var bytes = BitConverter.GetBytes(offset);
             if (BitConverter.IsLittleEndian)
             {
-                ;
                 Array.Reverse(bytes);
             }
 
@@ -643,18 +646,9 @@ public class RegionFile : IDisposable
         return new RegionKey(x, z);
     }
 
-    protected virtual int SectorBytes
-    {
-        get { return SECTOR_BYTES; }
-    }
+    protected virtual int SectorBytes => SECTOR_BYTES;
 
-    protected virtual int SectorInts
-    {
-        get { return SECTOR_BYTES / 4; }
-    }
+    protected virtual int SectorInts => SECTOR_BYTES / 4;
 
-    protected virtual byte[] EmptySector
-    {
-        get { return emptySector; }
-    }
+    protected virtual byte[] EmptySector => emptySector;
 }

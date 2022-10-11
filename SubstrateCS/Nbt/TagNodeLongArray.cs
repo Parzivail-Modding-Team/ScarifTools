@@ -2,8 +2,6 @@
 
 public sealed class TagNodeLongArray : TagNode
 {
-    private long[] _data = null;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -25,19 +23,12 @@ public sealed class TagNodeLongArray : TagNode
     /// <summary>
     /// Gets or sets an long array of tag data.
     /// </summary>
-    public long[] Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public long[] Data { get; set; }
 
     /// <summary>
     /// Gets the length of the stored byte array.
     /// </summary>
-    public int Length
-    {
-        get { return _data.Length; }
-    }
+    public int Length => Data.Length;
 
     /// <summary>
     /// Constructs a new byte array node with a null data value.
@@ -52,7 +43,7 @@ public sealed class TagNodeLongArray : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeLongArray(long[] d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -61,8 +52,8 @@ public sealed class TagNodeLongArray : TagNode
     /// <returns>A new long array node representing the same data.</returns>
     public override TagNode Copy()
     {
-        var arr = new long[_data.Length];
-        _data.CopyTo(arr, 0);
+        var arr = new long[Data.Length];
+        Data.CopyTo(arr, 0);
 
         return new TagNodeLongArray(arr);
     }
@@ -73,7 +64,7 @@ public sealed class TagNodeLongArray : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -83,8 +74,8 @@ public sealed class TagNodeLongArray : TagNode
     /// <returns>The long value at the given index of the stored byte array.</returns>
     public long this[int index]
     {
-        get { return _data[index]; }
-        set { _data[index] = value; }
+        get { return Data[index]; }
+        set { Data[index] = value; }
     }
 
     /// <summary>
@@ -104,6 +95,6 @@ public sealed class TagNodeLongArray : TagNode
     /// <returns>A system long array set to the node's data.</returns>
     public static implicit operator long[](TagNodeLongArray i)
     {
-        return i._data;
+        return i.Data;
     }
 }

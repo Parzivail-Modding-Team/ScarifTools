@@ -5,8 +5,6 @@
 /// </summary>
 public sealed class TagNodeInt : TagNode
 {
-    private int _data = 0;
-
     /// <summary>
     /// Converts the node to itself.
     /// </summary>
@@ -22,7 +20,7 @@ public sealed class TagNodeInt : TagNode
     /// <returns>A long node representing the same data.</returns>
     public override TagNodeLong ToTagLong()
     {
-        return new TagNodeLong(_data);
+        return new TagNodeLong(Data);
     }
 
     /// <summary>
@@ -48,11 +46,7 @@ public sealed class TagNodeInt : TagNode
     /// <summary>
     /// Gets or sets an int of tag data.
     /// </summary>
-    public int Data
-    {
-        get { return _data; }
-        set { _data = value; }
-    }
+    public int Data { get; set; }
 
     /// <summary>
     /// Constructs a new int node with a data value of 0.
@@ -67,7 +61,7 @@ public sealed class TagNodeInt : TagNode
     /// <param name="d">The value to set the node's tag data value.</param>
     public TagNodeInt(int d)
     {
-        _data = d;
+        Data = d;
     }
 
     /// <summary>
@@ -76,7 +70,7 @@ public sealed class TagNodeInt : TagNode
     /// <returns>A new int node representing the same data.</returns>
     public override TagNode Copy()
     {
-        return new TagNodeInt(_data);
+        return new TagNodeInt(Data);
     }
 
     /// <summary>
@@ -85,7 +79,7 @@ public sealed class TagNodeInt : TagNode
     /// <returns>String representation of the node's data.</returns>
     public override string ToString()
     {
-        return _data.ToString();
+        return Data.ToString();
     }
 
     /// <summary>
@@ -125,7 +119,7 @@ public sealed class TagNodeInt : TagNode
     /// <returns>A system int set to the node's data value.</returns>
     public static implicit operator int(TagNodeInt i)
     {
-        return i._data;
+        return i.Data;
     }
 
     /// <summary>
@@ -135,6 +129,6 @@ public sealed class TagNodeInt : TagNode
     /// <returns>A system long set to the node's data value.</returns>
     public static implicit operator long(TagNodeInt i)
     {
-        return i._data;
+        return i.Data;
     }
 }

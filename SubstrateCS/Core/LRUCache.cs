@@ -1,34 +1,26 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Substrate.Core;
 
-internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
+internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue> where TKey : notnull
 {
     public class CacheValueArgs : EventArgs
     {
-        private TKey _key;
-        private TValue _value;
+        public TKey Key { get; }
 
-        public TKey Key
-        {
-            get { return _key; }
-        }
-
-        public TValue Value
-        {
-            get { return _value; }
-        }
+        public TValue Value { get; }
 
         public CacheValueArgs(TKey key, TValue value)
         {
-            _key = key;
-            _value = value;
+            Key = key;
+            Value = value;
         }
     }
 
-    public event EventHandler<CacheValueArgs> RemoveCacheValue;
+    public event EventHandler<CacheValueArgs>? RemoveCacheValue;
 
     private Dictionary<TKey, TValue> _data;
     private IndexedLinkedList<TKey> _index;
@@ -74,10 +66,7 @@ internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
         return _data.ContainsKey(key);
     }
 
-    public ICollection<TKey> Keys
-    {
-        get { return _data.Keys; }
-    }
+    public ICollection<TKey> Keys => _data.Keys;
 
     public bool Remove(TKey key)
     {
@@ -90,7 +79,7 @@ internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
         return false;
     }
 
-    public bool TryGetValue(TKey key, out TValue value)
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
         if (!_data.TryGetValue(key, out value))
         {
@@ -103,10 +92,7 @@ internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
         return true;
     }
 
-    public ICollection<TValue> Values
-    {
-        get { return _data.Values; }
-    }
+    public ICollection<TValue> Values => _data.Values;
 
     public TValue this[TKey key]
     {
@@ -158,15 +144,9 @@ internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
         ((ICollection<KeyValuePair<TKey, TValue>>)_data).CopyTo(array, arrayIndex);
     }
 
-    public int Count
-    {
-        get { return _data.Count; }
-    }
+    public int Count => _data.Count;
 
-    public bool IsReadOnly
-    {
-        get { return false; }
-    }
+    public bool IsReadOnly => false;
 
     public bool Remove(KeyValuePair<TKey, TValue> item)
     {
@@ -201,9 +181,6 @@ internal class LRUCache<TKey, TValue> : IDictionary<TKey, TValue>
 
     private void OnRemoveCacheValue(CacheValueArgs e)
     {
-        if (RemoveCacheValue != null)
-        {
-            RemoveCacheValue(this, e);
-        }
+        RemoveCacheValue?.Invoke(this, e);
     }
 }

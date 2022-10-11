@@ -15,47 +15,36 @@ public enum CompressionType
 
 public class NBTFile
 {
-    private string _filename;
-
     public NBTFile(string path)
     {
-        _filename = path;
+        FileName = path;
     }
 
-    public string FileName
-    {
-        get { return _filename; }
-        protected set { _filename = value; }
-    }
+    public string FileName { get; protected init; }
 
     public bool Exists()
     {
-        return File.Exists(_filename);
+        return File.Exists(FileName);
     }
 
     public void Delete()
     {
-        File.Delete(_filename);
+        File.Delete(FileName);
     }
 
     public int GetModifiedTime()
     {
-        return Timestamp(File.GetLastWriteTime(_filename));
+        return Timestamp(File.GetLastWriteTime(FileName));
     }
 
-    public Stream GetDataInputStream()
-    {
-        return GetDataInputStream(CompressionType.GZip);
-    }
-
-    public virtual Stream GetDataInputStream(CompressionType compression)
+    public virtual Stream GetDataInputStream(CompressionType compression = CompressionType.GZip)
     {
         try
         {
             switch (compression)
             {
                 case CompressionType.None:
-                    using (var fstr = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var fstr = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         var length = fstr.Seek(0, SeekOrigin.End);
                         fstr.Seek(0, SeekOrigin.Begin);
@@ -66,13 +55,13 @@ public class NBTFile
                         return new MemoryStream(data);
                     }
                 case CompressionType.GZip:
-                    Stream stream1 = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    Stream stream1 = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     return new GZipStream(stream1, CompressionMode.Decompress);
                 case CompressionType.Zlib:
-                    Stream stream2 = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    Stream stream2 = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     return new ZLibStream(stream2, CompressionMode.Decompress);
                 case CompressionType.Deflate:
-                    Stream stream3 = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    Stream stream3 = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     return new DeflateStream(stream3, CompressionMode.Decompress);
                 default:
                     throw new ArgumentException("Invalid CompressionType specified", "compression");
@@ -104,7 +93,7 @@ public class NBTFile
                 case CompressionType.Deflate:
                     return new DeflateStream(new NBTBuffer(this), CompressionMode.Compress);
                 default:
-                    throw new ArgumentException("Invalid CompressionType specified", "compression");
+                    throw new ArgumentException("Invalid CompressionType specified", nameof(compression));
             }
         }
         catch (Exception ex)
@@ -127,7 +116,7 @@ public class NBTFile
         {
             try
             {
-                using (Stream fstr = new FileStream(file._filename, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                using (Stream fstr = new FileStream(file.FileName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 {
                     try
                     {

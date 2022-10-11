@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Substrate.Core;
 using Substrate.Nbt;
 
@@ -33,34 +34,29 @@ internal readonly struct World
         return new World(worldPath, dataVersion);
     }
 
-    public List<RegionId> GetRegions(string dimension = null)
+    public List<RegionId> GetRegions(string? dimension = null)
     {
         var path = dimension == null ? Path.Combine(_worldPath, "region") : Path.Combine(_worldPath, dimension, "region");
 
-        var regions = new List<RegionId>();
-
-        foreach (var regionFile in Directory.GetFiles(path, "*.mca"))
-        {
-            var name = Path.GetFileNameWithoutExtension(regionFile);
-            var parts = name.Split('.');
-            regions.Add(new RegionId(new Coord2(int.Parse(parts[1]), int.Parse(parts[2])), dimension));
-        }
-
-        return regions;
+        return Directory.GetFiles(path, "*.mca")
+            .Select(regionFile => Path.GetFileNameWithoutExtension(regionFile))
+            .Select(name => name.Split('.'))
+            .Select(parts => new RegionId(new Coord2(int.Parse(parts[1]), int.Parse(parts[2])), dimension))
+            .ToList();
     }
 
-    public BlockState GetBlock(Coord3 blockPos, string dimension = null)
+    public BlockState? GetBlock(Coord3 blockPos, string? dimension = null)
     {
         var region = GetRegion((blockPos >> 9).Flatten(), dimension);
         return region?.GetBlock(blockPos);
     }
 
-    public Region GetRegion(Coord2 pos, string dimension = null)
+    public Region? GetRegion(Coord2 pos, string? dimension = null)
     {
         return GetRegion(new RegionId(pos, dimension));
     }
 
-    public Region GetRegion(RegionId regionId)
+    public Region? GetRegion(RegionId regionId)
     {
         var (pos, dimension) = regionId;
 

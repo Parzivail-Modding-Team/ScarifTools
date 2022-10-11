@@ -47,19 +47,13 @@ public class ByteArray : IDataArray, ICopyable<ByteArray>
 
     public int this[int i]
     {
-        get { return dataArray[i]; }
-        set { dataArray[i] = (byte)value; }
+        get => dataArray[i];
+        set => dataArray[i] = (byte)value;
     }
 
-    public int Length
-    {
-        get { return dataArray.Length; }
-    }
+    public int Length => dataArray.Length;
 
-    public int DataWidth
-    {
-        get { return 8; }
-    }
+    public int DataWidth => 8;
 
     public void Clear()
     {
@@ -84,24 +78,20 @@ public class ByteArray : IDataArray, ICopyable<ByteArray>
 
 public sealed class XZYByteArray : ByteArray, IDataArray3
 {
-    private readonly int _xdim;
-    private readonly int _ydim;
-    private readonly int _zdim;
-
     public XZYByteArray(int xdim, int ydim, int zdim)
         : base(xdim * ydim * zdim)
     {
-        _xdim = xdim;
-        _ydim = ydim;
-        _zdim = zdim;
+        XDim = xdim;
+        YDim = ydim;
+        ZDim = zdim;
     }
 
     public XZYByteArray(int xdim, int ydim, int zdim, byte[] data)
         : base(data)
     {
-        _xdim = xdim;
-        _ydim = ydim;
-        _zdim = zdim;
+        XDim = xdim;
+        YDim = ydim;
+        ZDim = zdim;
 
         if (xdim * ydim * zdim != data.Length)
         {
@@ -113,45 +103,36 @@ public sealed class XZYByteArray : ByteArray, IDataArray3
     {
         get
         {
-            var index = _ydim * (x * _zdim + z) + y;
+            var index = YDim * (x * ZDim + z) + y;
             return dataArray[index];
         }
 
         set
         {
-            var index = _ydim * (x * _zdim + z) + y;
+            var index = YDim * (x * ZDim + z) + y;
             dataArray[index] = (byte)value;
         }
     }
 
-    public int XDim
-    {
-        get { return _xdim; }
-    }
+    public int XDim { get; }
 
-    public int YDim
-    {
-        get { return _ydim; }
-    }
+    public int YDim { get; }
 
-    public int ZDim
-    {
-        get { return _zdim; }
-    }
+    public int ZDim { get; }
 
     public int GetIndex(int x, int y, int z)
     {
-        return _ydim * (x * _zdim + z) + y;
+        return YDim * (x * ZDim + z) + y;
     }
 
     public void GetMultiIndex(int index, out int x, out int y, out int z)
     {
-        var yzdim = _ydim * _zdim;
+        var yzdim = YDim * ZDim;
         x = index / yzdim;
 
         var zy = index - (x * yzdim);
-        z = zy / _ydim;
-        y = zy - (z * _ydim);
+        z = zy / YDim;
+        y = zy - (z * YDim);
     }
 
     #region ICopyable<XZYByteArray> Members
@@ -161,7 +142,7 @@ public sealed class XZYByteArray : ByteArray, IDataArray3
         var data = new byte[dataArray.Length];
         dataArray.CopyTo(data, 0);
 
-        return new XZYByteArray(_xdim, _ydim, _zdim, data);
+        return new XZYByteArray(XDim, YDim, ZDim, data);
     }
 
     #endregion
@@ -169,24 +150,20 @@ public sealed class XZYByteArray : ByteArray, IDataArray3
 
 public sealed class YZXByteArray : ByteArray, IDataArray3
 {
-    private readonly int _xdim;
-    private readonly int _ydim;
-    private readonly int _zdim;
-
     public YZXByteArray(int xdim, int ydim, int zdim)
         : base(xdim * ydim * zdim)
     {
-        _xdim = xdim;
-        _ydim = ydim;
-        _zdim = zdim;
+        XDim = xdim;
+        YDim = ydim;
+        ZDim = zdim;
     }
 
     public YZXByteArray(int xdim, int ydim, int zdim, byte[] data)
         : base(data)
     {
-        _xdim = xdim;
-        _ydim = ydim;
-        _zdim = zdim;
+        XDim = xdim;
+        YDim = ydim;
+        ZDim = zdim;
 
         if (xdim * ydim * zdim != data.Length)
         {
@@ -198,45 +175,36 @@ public sealed class YZXByteArray : ByteArray, IDataArray3
     {
         get
         {
-            var index = _xdim * (y * _zdim + z) + x;
+            var index = XDim * (y * ZDim + z) + x;
             return dataArray[index];
         }
 
         set
         {
-            var index = _xdim * (y * _zdim + z) + x;
+            var index = XDim * (y * ZDim + z) + x;
             dataArray[index] = (byte)value;
         }
     }
 
-    public int XDim
-    {
-        get { return _xdim; }
-    }
+    public int XDim { get; }
 
-    public int YDim
-    {
-        get { return _ydim; }
-    }
+    public int YDim { get; }
 
-    public int ZDim
-    {
-        get { return _zdim; }
-    }
+    public int ZDim { get; }
 
     public int GetIndex(int x, int y, int z)
     {
-        return _xdim * (y * _zdim + z) + x;
+        return XDim * (y * ZDim + z) + x;
     }
 
     public void GetMultiIndex(int index, out int x, out int y, out int z)
     {
-        var xzdim = _xdim * _zdim;
+        var xzdim = XDim * ZDim;
         y = index / xzdim;
 
         var zx = index - (y * xzdim);
-        z = zx / _xdim;
-        x = zx - (z * _xdim);
+        z = zx / XDim;
+        x = zx - (z * XDim);
     }
 
     #region ICopyable<YZXByteArray> Members
@@ -246,7 +214,7 @@ public sealed class YZXByteArray : ByteArray, IDataArray3
         var data = new byte[dataArray.Length];
         dataArray.CopyTo(data, 0);
 
-        return new YZXByteArray(_xdim, _ydim, _zdim, data);
+        return new YZXByteArray(XDim, YDim, ZDim, data);
     }
 
     #endregion
@@ -254,21 +222,18 @@ public sealed class YZXByteArray : ByteArray, IDataArray3
 
 public sealed class ZXByteArray : ByteArray, IDataArray2
 {
-    private readonly int _xdim;
-    private readonly int _zdim;
-
     public ZXByteArray(int xdim, int zdim)
         : base(xdim * zdim)
     {
-        _xdim = xdim;
-        _zdim = zdim;
+        XDim = xdim;
+        ZDim = zdim;
     }
 
     public ZXByteArray(int xdim, int zdim, byte[] data)
         : base(data)
     {
-        _xdim = xdim;
-        _zdim = zdim;
+        XDim = xdim;
+        ZDim = zdim;
 
         if (xdim * zdim != data.Length)
         {
@@ -280,26 +245,20 @@ public sealed class ZXByteArray : ByteArray, IDataArray2
     {
         get
         {
-            var index = z * _xdim + x;
+            var index = z * XDim + x;
             return dataArray[index];
         }
 
         set
         {
-            var index = z * _xdim + x;
+            var index = z * XDim + x;
             dataArray[index] = (byte)value;
         }
     }
 
-    public int XDim
-    {
-        get { return _xdim; }
-    }
+    public int XDim { get; }
 
-    public int ZDim
-    {
-        get { return _zdim; }
-    }
+    public int ZDim { get; }
 
     #region ICopyable<ZXByteArray> Members
 
@@ -308,7 +267,7 @@ public sealed class ZXByteArray : ByteArray, IDataArray2
         var data = new byte[dataArray.Length];
         dataArray.CopyTo(data, 0);
 
-        return new ZXByteArray(_xdim, _zdim, data);
+        return new ZXByteArray(XDim, ZDim, data);
     }
 
     #endregion
@@ -330,19 +289,13 @@ public class IntArray : IDataArray, ICopyable<IntArray>
 
     public int this[int i]
     {
-        get { return dataArray[i]; }
-        set { dataArray[i] = value; }
+        get => dataArray[i];
+        set => dataArray[i] = value;
     }
 
-    public int Length
-    {
-        get { return dataArray.Length; }
-    }
+    public int Length => dataArray.Length;
 
-    public int DataWidth
-    {
-        get { return 32; }
-    }
+    public int DataWidth => 32;
 
     public void Clear()
     {
@@ -367,21 +320,18 @@ public class IntArray : IDataArray, ICopyable<IntArray>
 
 public sealed class ZXIntArray : IntArray, IDataArray2
 {
-    private readonly int _xdim;
-    private readonly int _zdim;
-
     public ZXIntArray(int xdim, int zdim)
         : base(xdim * zdim)
     {
-        _xdim = xdim;
-        _zdim = zdim;
+        XDim = xdim;
+        ZDim = zdim;
     }
 
     public ZXIntArray(int xdim, int zdim, int[] data)
         : base(data)
     {
-        _xdim = xdim;
-        _zdim = zdim;
+        XDim = xdim;
+        ZDim = zdim;
 
         if (xdim * zdim != data.Length)
         {
@@ -393,26 +343,20 @@ public sealed class ZXIntArray : IntArray, IDataArray2
     {
         get
         {
-            var index = z * _xdim + x;
+            var index = z * XDim + x;
             return dataArray[index];
         }
 
         set
         {
-            var index = z * _xdim + x;
+            var index = z * XDim + x;
             dataArray[index] = value;
         }
     }
 
-    public int XDim
-    {
-        get { return _xdim; }
-    }
+    public int XDim { get; }
 
-    public int ZDim
-    {
-        get { return _zdim; }
-    }
+    public int ZDim { get; }
 
     #region ICopyable<ZXByteArray> Members
 
@@ -421,7 +365,7 @@ public sealed class ZXIntArray : IntArray, IDataArray2
         var data = new int[dataArray.Length];
         dataArray.CopyTo(data, 0);
 
-        return new ZXIntArray(_xdim, _zdim, data);
+        return new ZXIntArray(XDim, ZDim, data);
     }
 
     #endregion

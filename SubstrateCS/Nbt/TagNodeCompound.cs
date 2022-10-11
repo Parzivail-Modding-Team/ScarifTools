@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Substrate.Nbt;
 
@@ -77,7 +78,7 @@ public sealed class TagNodeCompound : TagNode, IDictionary<string, TagNode>
     /// Gets a string representation of the node's data.
     /// </summary>
     /// <returns>String representation of the node's data.</returns>
-    public override string ToString()
+    public override string? ToString()
     {
         return _tags.ToString();
     }
@@ -130,7 +131,7 @@ public sealed class TagNodeCompound : TagNode, IDictionary<string, TagNode>
     /// <param name="value">When the function returns, contains the subnode assicated with the specified key.  If no subnode was found, contains a default value.</param>
     /// <returns>Status indicating whether a subnode was found.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
-    public bool TryGetValue(string key, out TagNode value)
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out TagNode value)
     {
         return _tags.TryGetValue(key, out value);
     }
@@ -158,7 +159,7 @@ public sealed class TagNodeCompound : TagNode, IDictionary<string, TagNode>
     }
 
     /// <inheritdoc />
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return ReferenceEquals(this, obj) || obj is TagNodeCompound other && Equals(other);
     }
@@ -166,15 +167,15 @@ public sealed class TagNodeCompound : TagNode, IDictionary<string, TagNode>
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        return (_tags != null ? _tags.GetHashCode() : 0);
+        return _tags.GetHashCode();
     }
 
-    public static bool operator ==(TagNodeCompound left, TagNodeCompound right)
+    public static bool operator ==(TagNodeCompound? left, TagNodeCompound? right)
     {
         return Equals(left, right);
     }
 
-    public static bool operator !=(TagNodeCompound left, TagNodeCompound right)
+    public static bool operator !=(TagNodeCompound? left, TagNodeCompound? right)
     {
         return !Equals(left, right);
     }
@@ -209,7 +210,7 @@ public sealed class TagNodeCompound : TagNode, IDictionary<string, TagNode>
     /// <returns>Status indicating if the subnode and key combination exists in the set.</returns>
     public bool Contains(KeyValuePair<string, TagNode> item)
     {
-        TagNode value;
+        TagNode? value;
         if (!_tags.TryGetValue(item.Key, out value))
         {
             return false;
