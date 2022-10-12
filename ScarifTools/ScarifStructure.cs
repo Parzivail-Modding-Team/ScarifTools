@@ -450,6 +450,15 @@ internal readonly struct ScarifStructure
                 if (section.Palette.Length < 2)
                     continue;
 
+                // Example huffman coding, actually increases resulting compression entropy
+                // var map = HuffmanEncoder.Build(states);
+                // using var coded = MemoryStreamManager.GetStream("section_huffman");
+                // HuffmanEncoder.Encode(map, states, coded);
+                // var data = coded.ToArray();
+                //
+                // chunkWriter.Write7BitEncodedInt(data.Length);
+                // chunkWriter.Write(data);
+
                 // Section length always 4096 (16^3)
                 foreach (var state in states)
                     chunkWriter.Write7BitEncodedInt(state);
