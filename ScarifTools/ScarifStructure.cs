@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.IO;
-using Substrate.Nbt;
 using ZstdNet;
 
 namespace ScarifTools;
@@ -106,26 +105,26 @@ internal readonly struct ScarifStructure
 
     private static (BlockState[] Palette, int[] States) SortPaletteByUsage(BlockState[] palette, int[] states)
     {
-        var histogram = new Dictionary<BlockState, int>();
-        foreach (var state in palette)
-            histogram[state] = 0;
+        var histogram = new Dictionary<int, int>(palette.Length);
+        for (var i = 0; i < palette.Length; i++)
+            histogram[i] = 0;
 
         foreach (var state in states)
-            histogram[palette[state]]++;
+            histogram[state]++;
 
         var orderedPalette = histogram.OrderByDescending(pair => pair.Value).Select(pair => pair.Key).ToArray();
-        var orderedStateIndices = new Dictionary<BlockState, int>();
+        var orderedStateIndices = new Dictionary<int, int>(palette.Length);
 
         for (var i = 0; i < orderedPalette.Length; i++)
             orderedStateIndices[orderedPalette[i]] = i;
 
         for (var i = 0; i < states.Length; i++)
-            states[i] = orderedStateIndices[palette[states[i]]];
+            states[i] = orderedStateIndices[states[i]];
 
-        return (orderedPalette, states);
+        return (orderedPalette.Select(i => palette[i]).ToArray(), states);
     }
 
-    private static void WriteBlockStateProperties(BinaryWriter w, string block, TagNodeCompound props)
+    private static void WriteBlockStateProperties(BinaryWriter w, string block, Dictionary<string, string> props)
     {
         foreach (var (key, value) in props)
         {
@@ -133,7 +132,7 @@ internal readonly struct ScarifStructure
             {
                 case "axis":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "x" => SpecialBlockProperties.AxisX,
                         "y" => SpecialBlockProperties.AxisY,
@@ -146,7 +145,7 @@ internal readonly struct ScarifStructure
                 }
                 case "lit":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.LitFalse,
                         "true" => SpecialBlockProperties.LitTrue,
@@ -158,7 +157,7 @@ internal readonly struct ScarifStructure
                 }
                 case "level":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "0" => SpecialBlockProperties.Level0,
                         "1" => SpecialBlockProperties.Level1,
@@ -184,7 +183,7 @@ internal readonly struct ScarifStructure
                 }
                 case "power":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "0" => SpecialBlockProperties.Power0,
                         "1" => SpecialBlockProperties.Power1,
@@ -210,7 +209,7 @@ internal readonly struct ScarifStructure
                 }
                 case "half":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "lower" => SpecialBlockProperties.HalfLower,
                         "upper" => SpecialBlockProperties.HalfUpper,
@@ -224,7 +223,7 @@ internal readonly struct ScarifStructure
                 }
                 case "waterlogged":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.WaterloggedFalse,
                         "true" => SpecialBlockProperties.WaterloggedTrue,
@@ -236,7 +235,7 @@ internal readonly struct ScarifStructure
                 }
                 case "facing":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "up" => SpecialBlockProperties.FacingUp,
                         "down" => SpecialBlockProperties.FacingDown,
@@ -252,7 +251,7 @@ internal readonly struct ScarifStructure
                 }
                 case "snowy":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.SnowyFalse,
                         "true" => SpecialBlockProperties.SnowyTrue,
@@ -264,7 +263,7 @@ internal readonly struct ScarifStructure
                 }
                 case "persistent":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.PersistentFalse,
                         "true" => SpecialBlockProperties.PersistentTrue,
@@ -276,7 +275,7 @@ internal readonly struct ScarifStructure
                 }
                 case "up":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.UpFalse,
                         "true" => SpecialBlockProperties.UpTrue,
@@ -288,7 +287,7 @@ internal readonly struct ScarifStructure
                 }
                 case "down":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.DownFalse,
                         "true" => SpecialBlockProperties.DownTrue,
@@ -300,7 +299,7 @@ internal readonly struct ScarifStructure
                 }
                 case "north":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.NorthFalse,
                         "true" => SpecialBlockProperties.NorthTrue,
@@ -315,7 +314,7 @@ internal readonly struct ScarifStructure
                 }
                 case "south":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.SouthFalse,
                         "true" => SpecialBlockProperties.SouthTrue,
@@ -330,7 +329,7 @@ internal readonly struct ScarifStructure
                 }
                 case "east":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.EastFalse,
                         "true" => SpecialBlockProperties.EastTrue,
@@ -345,7 +344,7 @@ internal readonly struct ScarifStructure
                 }
                 case "west":
                 {
-                    var p = value.ToTagString().Data switch
+                    var p = value switch
                     {
                         "false" => SpecialBlockProperties.WestFalse,
                         "true" => SpecialBlockProperties.WestTrue,
@@ -361,23 +360,20 @@ internal readonly struct ScarifStructure
                 case "age":
                 {
                     w.Write((byte)SpecialBlockProperties.Age);
-                    w.Write(byte.Parse(value.ToTagString().Data));
+                    w.Write(byte.Parse(value));
                     break;
                 }
                 case "distance":
                 {
                     w.Write((byte)SpecialBlockProperties.Distance);
-                    w.Write(byte.Parse(value.ToTagString().Data));
+                    w.Write(byte.Parse(value));
                     break;
                 }
                 default:
                 {
-                    if (value.GetTagType() != TagType.TAG_STRING)
-                        throw new NotSupportedException();
-
                     w.Write((byte)SpecialBlockProperties.ExtendedProperty);
                     w.Write(key);
-                    w.Write(value.ToTagString().Data);
+                    w.Write(value);
                     break;
                 }
             }
