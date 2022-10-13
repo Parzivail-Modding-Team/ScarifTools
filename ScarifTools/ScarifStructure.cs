@@ -92,7 +92,7 @@ public enum SpecialBlockProperties : byte
 	WestTall = 78,
 }
 
-internal record SortedChunkPalette(BlockState[] Palette, int[] States, int Y);
+internal record SortedChunkPalette(BlockState[] Palette, int[] Histogram, int[] States);
 
 internal readonly struct ScarifStructure
 {
@@ -115,6 +115,7 @@ internal readonly struct ScarifStructure
 			histogram[state]++;
 
 		var orderedPalette = histogram.OrderByDescending(pair => pair.Value).Select(pair => pair.Key).ToArray();
+		var orderedPaletteHistogram = histogram.OrderByDescending(pair => pair.Value).Select(pair => pair.Value).ToArray();
 		var orderedStateIndices = new Dictionary<int, int>(palette.Length);
 
 		for (var i = 0; i < orderedPalette.Length; i++)
@@ -123,7 +124,7 @@ internal readonly struct ScarifStructure
 		for (var i = 0; i < states.Length; i++)
 			states[i] = orderedStateIndices[states[i]];
 
-		return new SortedChunkPalette(orderedPalette.Select(i => palette[i]).ToArray(), states, 0);
+		return new SortedChunkPalette(orderedPalette.Select(i => palette[i]).ToArray(), orderedPaletteHistogram, states);
 	}
 
 	private static void WriteBlockStateProperties(BinaryWriter w, string block, Dictionary<string, string> props)
@@ -423,7 +424,7 @@ internal readonly struct ScarifStructure
 			// Greatly improve compression on sections that have > 127
 			// unique states, generally improve compression otherwise
 			var sectionsWithSortedPalettes = chunk.Sections
-				.Select(section => SortPaletteByUsage(section.Palette, section.BlockStates) with { Y = section.Y })
+				.Select(section => SortPaletteByUsage(section.Palette, section.BlockStates))
 				.ToArray();
 
 			chunkWriter.Write7BitEncodedInt(chunk.Sections.Length);
@@ -441,7 +442,7 @@ internal readonly struct ScarifStructure
 				}
 			}
 
-			foreach (var section in sectionsWithSortedPalettes)
+			foreach (var section in chunk.Sections)
 				chunkWriter.Write7BitEncodedInt(section.Y);
 
 			foreach (var palette in sectionsWithSortedPalettes)
