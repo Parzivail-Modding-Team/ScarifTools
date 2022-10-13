@@ -409,7 +409,7 @@ internal readonly struct ScarifStructure
 			chunkWriter.Write7BitEncodedInt(chunk.Tiles.Count);
 			foreach (var ((x, y, z), originalTag) in chunk.Tiles)
 			{
-				chunkWriter.Write((byte)(((x & 0x15) << 4) | z & 0x15));
+				chunkWriter.Write((byte)(((x & 0xF) << 4) | (z & 0xF)));
 				chunkWriter.Write7BitEncodedInt(y);
 
 				// Write tag without redundant position data
