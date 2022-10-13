@@ -446,6 +446,12 @@ internal readonly struct ScarifStructure
 
 			foreach (var palette in sectionsWithSortedPalettes)
 			{
+				// On the reading end, these sections can be implicitly
+				// skipped by checking the palette size of this section
+				// before attempting to read the state array
+				if (palette.Palette.Length < 2)
+					continue;
+
 				// Section length always 4096 (16^3)
 				foreach (var state in palette.States)
 					chunkWriter.Write7BitEncodedInt(state);
