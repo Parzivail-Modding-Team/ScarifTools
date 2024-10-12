@@ -1,66 +1,65 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
-using Substrate.Nbt;
+using System.Security.AccessControl;
+using Acacia;
 
 namespace ScarifTools;
 
 public class ChunkSection
 {
 	public readonly Coord2 Pos;
-	public readonly byte Y;
+	public readonly sbyte Y;
 	public readonly int[] BlockStates;
-	public readonly BlockState[] Palette;
+	public readonly BlockState[] BlockStatePalette;
+	public readonly int[] Biomes;
+	public readonly string[] BiomePalette;
 
-	public ChunkSection(int dataVersion, Coord2 pos, byte y, long[] packedStates, BlockState[] palette)
+	public ChunkSection(int dataVersion, Coord2 pos, sbyte y, long[]? packedBlockStates, BlockState[] blockStatePalette, long[]? packedBiomes, string[] biomePalette)
 	{
 		Pos = pos;
 		Y = y;
-		Palette = palette;
+		
+		BlockStatePalette = blockStatePalette;
+		BlockStates = UnpackLongs(packedBlockStates, blockStatePalette.Length, 4, 4096);
 
-		var paletteLength = palette.Length;
-		paletteLength--;
-		paletteLength |= paletteLength >> 1;
-		paletteLength |= paletteLength >> 2;
-		paletteLength |= paletteLength >> 4;
-		paletteLength |= paletteLength >> 8;
-		paletteLength |= paletteLength >> 16;
-		paletteLength++;
+		BiomePalette = biomePalette;
+		Biomes = UnpackLongs(packedBiomes, biomePalette.Length, 0, 64);
+	}
 
-		var bitWidth = Math.Max((int)Math.Log2(paletteLength), 4);
+	private static int[] UnpackLongs(long[]? packedValues, int paletteSize, int minBitWidth, int indices)
+	{
+		var values = new int[indices];
 
-		BlockStates = new int[4096];
+		if (packedValues == null)
+			// A null packed value represents a single-entry palette
+			return values;
+		
+		var bitWidth = Math.Max(MathUtil.GetMinRepresentableBits(paletteSize), minBitWidth);
 
 		// In 20w17a+ the remaining bits in a long are left unused instead of
 		// the data being split and rolling over into the next long
 
-		var blocksPerLong = sizeof(long) * 8 / bitWidth;
+		var valuesPerLong = sizeof(long) * 8 / bitWidth;
 
 		var longIdx = 0;
 		var bitIdx = 0;
 		BitArray? bArr = null;
 
-		for (var i = 0; i < BlockStates.Length; i++)
+		for (var i = 0; i < values.Length; i++)
 		{
-			if (i % blocksPerLong == 0)
+			if (i % valuesPerLong == 0)
 			{
-				bArr = new BitArray(BitConverter.GetBytes(packedStates[longIdx]));
+				bArr = new BitArray(BitConverter.GetBytes(packedValues[longIdx]));
 				longIdx++;
 				bitIdx = 0;
 			}
 
-			BlockStates[i] = TakeBits(bArr!, bitIdx, bitWidth);
+			values[i] = TakeBits(bArr!, bitIdx, bitWidth);
 			bitIdx += bitWidth;
 		}
-	}
 
-	public ChunkSection(int dataVersion, Coord2 pos, byte y, BlockState[] palette)
-	{
-		Pos = pos;
-		Y = y;
-		Palette = palette;
-		BlockStates = new int[4096];
-		Array.Fill(BlockStates, 0);
+		return values;
 	}
 
 	private static int TakeBits(BitArray b, int i, int len)
@@ -75,7 +74,7 @@ public class ChunkSection
 
 	public BlockState GetBlockState(Coord3 block)
 	{
-		return Palette[BlockStates[GetBlockIndex(block)]];
+		return BlockStatePalette[BlockStates[GetBlockIndex(block)]];
 	}
 
 	public static int GetBlockIndex(Coord3 pos)
@@ -88,19 +87,40 @@ public class ChunkSection
 		return y * 256 + z * 16 + x;
 	}
 
-	public static ChunkSection? Load(int dataVersion, Coord2 pos, TagNodeCompound tag)
+	public string GetBiome(Coord3 block)
 	{
-		var y = tag["Y"].ToTagByte().Data;
-		var blockStatesTag = tag["block_states"].ToTagCompound();
+		return BiomePalette[Biomes[GetBiomeIndex(block)]];
+	}
 
-		var palette = blockStatesTag["palette"].ToTagList().Select(tagNode => BlockState.Load(tagNode.ToTagCompound())).ToArray();
+	public static int GetBiomeIndex(Coord3 pos)
+	{
+		return GetBiomeIndex(pos.X, pos.Y, pos.Z);
+	}
 
-		if (!blockStatesTag.ContainsKey("data"))
-			return palette[0].Name == "minecraft:air" ? null : new ChunkSection(dataVersion, pos, y, palette);
+	public static int GetBiomeIndex(int x, int y, int z)
+	{
+		x /= 4;
+		y /= 4;
+		z /= 4;
+		
+		return y * 16 + z * 4 + x;
+	}
 
-		var blockStates = blockStatesTag["data"].ToTagLongArray().Data;
+	public static ChunkSection? Load(int dataVersion, Coord2 pos, NbtCompound tag)
+	{
+		var y = tag.GetByte("Y");
 
-		return new ChunkSection(dataVersion, pos, y, blockStates, palette);
+		if (!tag.TryGetCompound("block_states", out var blockStatesTag))
+			return null;
+		
+		var blockStatePalette = blockStatesTag.GetList("palette").Elements.Select(tagNode => BlockState.Load((NbtCompound)tagNode)).ToArray();
+		blockStatesTag.TryGetLongArray("data", out var blockStates);
+		
+		var biomesTag = tag.GetCompound("biomes");
+		var biomePalette = biomesTag.GetList("palette").Elements.Select(tagNode =>((NbtString)tagNode).Value).ToArray();
+		biomesTag.TryGetLongArray("data", out var biomes);
+
+		return new ChunkSection(dataVersion, pos, y, blockStates?.Elements, blockStatePalette, biomes?.Elements, biomePalette);
 	}
 
 	protected bool Equals(ChunkSection other)

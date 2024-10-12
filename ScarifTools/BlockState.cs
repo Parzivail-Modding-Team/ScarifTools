@@ -1,31 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Substrate.Nbt;
+using Acacia;
 
 namespace ScarifTools;
 
 public class BlockState
 {
     private readonly int _hashCode;
-    private readonly string _encoded;
 
     public string Name { get; }
-    public Dictionary<string, string>? Properties { get; }
+    public Dictionary<string, string> Properties { get; }
 
-    public BlockState(string name, TagNodeCompound? properties)
+    public BlockState(string name, NbtCompound? properties)
     {
         Name = name;
-        Properties = properties?.ToDictionary(pair => pair.Key, pair => pair.Value.ToTagString().Data);
+        Properties = properties?.Elements.ToDictionary(pair => pair.Key, pair => ((NbtString)pair.Value).Value) ?? new Dictionary<string, string>();
 
         _hashCode = HashCode.Combine(Name, Properties);
-        _encoded = Properties == null ? name : $"{name}[{string.Join(",", Properties.Select(pair => $"{pair.Key}={pair.Value}"))}]";
     }
 
-    public static BlockState Load(TagNodeCompound tag)
+    public static BlockState Load(NbtCompound tag)
     {
-        var name = tag["Name"].ToTagString().Data;
-        var props = tag.ContainsKey("Properties") ? tag["Properties"].ToTagCompound() : null;
+        var name = tag.GetString("Name");
+        var props = tag.TryGetCompound("Properties", out var value) ? value : null;
 
         return new BlockState(name, props);
     }
@@ -37,7 +35,7 @@ public class BlockState
 
     private bool Equals(BlockState other)
     {
-        return _encoded == other._encoded;
+        return Name == other.Name && Properties.SequenceEqual(other.Properties);
     }
 
     public override bool Equals(object? obj)

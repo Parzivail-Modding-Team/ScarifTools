@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using Substrate.Nbt;
+using Acacia;
 
 namespace ScarifTools;
 
-public record Chunk(Coord2 Pos, ChunkSection[] Sections, Dictionary<Coord3, TagNodeCompound> Tiles)
+public record Chunk(Coord2 Pos, ChunkSection[] Sections, Dictionary<Coord3, NbtCompound> Tiles)
 {
 	public BlockState? GetBlock(Coord3 block)
 	{
@@ -14,30 +15,35 @@ public record Chunk(Coord2 Pos, ChunkSection[] Sections, Dictionary<Coord3, TagN
 		return section?.GetBlockState(block - (chunk << 4));
 	}
 
-	public static Chunk? Load(NbtTree tag)
+	public static Chunk? Load(NbtElement tag)
 	{
-		var dataVersion = tag.Root["DataVersion"].ToTagInt().Data;
+		if (tag is not NbtCompound root)
+			throw new InvalidDataException("Chunk was not NbtCompound");
+		
+		var dataVersion = root.GetInt("DataVersion");
 
-		if (!tag.Root["Status"].ToTagString().Data.Equals("full"))
+		var status = root.GetString("Status");
+		if (status != "minecraft:full")
 			return null;
 
-		var sectionsList = tag.Root["sections"].ToTagList();
-		if (sectionsList.Count == 0)
+		var sectionsList = root.GetList("sections");
+		if (sectionsList.Elements.Count == 0)
 			return null;
 
-		var x = tag.Root["xPos"].ToTagInt().Data;
-		var z = tag.Root["zPos"].ToTagInt().Data;
+		var x = root.GetInt("xPos");
+		var z = root.GetInt("zPos");
 		var pos = new Coord2(x, z);
 
 		var sections = sectionsList
-			.Select(node => ChunkSection.Load(dataVersion, pos, node.ToTagCompound()))
+			.Elements
+			.Select(node => ChunkSection.Load(dataVersion, pos, (NbtCompound)node))
 			.Where(section => section != null)
 			.Select(section => section!) // Require section to be non-null at this point
 			.ToArray();
-		var tiles = tag.Root["block_entities"]
-			.ToTagList()
-			.Select(node => node.ToTagCompound())
-			.ToDictionary(node => new Coord3(node["x"].ToTagInt().Data, node["y"].ToTagInt().Data, node["z"].ToTagInt().Data));
+		var tiles = root.GetList("block_entities")
+			.Elements
+			.Select(node => (NbtCompound)node)
+			.ToDictionary(node => new Coord3(node.GetInt("x"), node.GetInt("y"), node.GetInt("z")));
 
 		return new Chunk(pos, sections, tiles);
 	}

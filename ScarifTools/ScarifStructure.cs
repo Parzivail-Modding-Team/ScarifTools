@@ -414,17 +414,17 @@ internal readonly struct ScarifStructure
 				chunkWriter.Write7BitEncodedInt(y);
 
 				// Write tag without redundant position data
-				var tag = originalTag.Copy();
-				tag.Remove("x");
-				tag.Remove("y");
-				tag.Remove("z");
+				var tag = originalTag.ShallowCopy();
+				tag.Elements.Remove("x");
+				tag.Elements.Remove("y");
+				tag.Elements.Remove("z");
 				chunkWriter.WriteNbt(tag);
 			}
 
 			// Greatly improve compression on sections that have > 127
 			// unique states, generally improve compression otherwise
 			var sectionsWithSortedPalettes = chunk.Sections
-				.Select(section => SortPaletteByUsage(section.Palette, section.BlockStates))
+				.Select(section => SortPaletteByUsage(section.BlockStatePalette, section.BlockStates))
 				.ToArray();
 
 			chunkWriter.Write7BitEncodedInt(chunk.Sections.Length);

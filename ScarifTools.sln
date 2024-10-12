@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30503.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScarifTools", "ScarifTools\ScarifTools.csproj", "{C58A45BA-3026-49F7-8F9A-D0730F277765}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Substrate", "SubstrateCS\Substrate.csproj", "{7264A1C4-AB4A-4437-B252-7379B98B5509}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Acacia", "Acacia\Acacia.csproj", "{96614DA1-070C-4FF7-9973-8D2C5566ABC7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{C58A45BA-3026-49F7-8F9A-D0730F277765}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C58A45BA-3026-49F7-8F9A-D0730F277765}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C58A45BA-3026-49F7-8F9A-D0730F277765}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7264A1C4-AB4A-4437-B252-7379B98B5509}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7264A1C4-AB4A-4437-B252-7379B98B5509}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7264A1C4-AB4A-4437-B252-7379B98B5509}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7264A1C4-AB4A-4437-B252-7379B98B5509}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96614DA1-070C-4FF7-9973-8D2C5566ABC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96614DA1-070C-4FF7-9973-8D2C5566ABC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96614DA1-070C-4FF7-9973-8D2C5566ABC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96614DA1-070C-4FF7-9973-8D2C5566ABC7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
